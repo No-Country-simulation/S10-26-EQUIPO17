@@ -1,0 +1,22 @@
+# Dependencies and build output
+node_modules/
+dist/
+.vite/
+
+# Environment files (only the example is tracked)
+.env
+.env.*
+!.env.example
+
+# Test artifacts
+coverage/
+test-results/
+playwright-report/
+
+# Logs and OS files
+*.log
+.DS_Store
+.atl/*
+
+# Ai config files
+.claude
