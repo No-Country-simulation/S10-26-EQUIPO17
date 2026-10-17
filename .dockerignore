@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.gitignore
+.vscode
+.devcontainer
+supabase/.temp
+supabase/.branches
+*.log
+Dockerfile
+docker-compose*.yml
