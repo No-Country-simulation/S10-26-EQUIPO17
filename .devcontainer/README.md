@@ -43,9 +43,7 @@ Las dependencias se agregan en cada app: `pnpm --filter web add ...` o `pnpm --f
   `psql postgresql://postgres:postgres@host.docker.internal:54322/postgres`.
 - El CLI ya sabe esto gracias a `SUPABASE_SERVICES_HOSTNAME=host.docker.internal`.
 - Por eso `pnpm supabase status` muestra todas las URLs con `host.docker.internal`. **Es lo esperado.**
-  Esas URLs sirven dentro del contenedor, pero en Linux tu máquina no resuelve ese nombre:
-  para abrirlas en el navegador reemplazá `host.docker.internal` por `127.0.0.1`
-  (Studio: `http://127.0.0.1:54323`, API: `http://127.0.0.1:54321`).
+  Esas URLs sirven dentro del contenedor, pero tu máquina puede no resolver ese nombre (en Linux nunca lo resuelve; en Windows y Mac depende de la configuración de Docker Desktop). Para abrirlas en el navegador reemplazá host.docker.internal por 127.0.0.1 (Studio: http://127.0.0.1:54323, API: http://127.0.0.1:54321).
 - El código del **front** corre en el navegador, no en el contenedor: la URL de Supabase
   que use la app de React tiene que ser `http://127.0.0.1:54321`, nunca `host.docker.internal`.
 - El Supabase CLI se actualiza como cualquier dependencia: `pnpm up -w supabase`.
