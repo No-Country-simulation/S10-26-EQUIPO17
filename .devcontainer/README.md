@@ -27,7 +27,7 @@ Las dependencias se agregan en cada app: `pnpm --filter web add ...` o `pnpm --f
    ```bash
    pnpm supabase start      # levanta Supabase en el Docker de tu máquina
    pnpm supabase status     # URL de la API, claves y URL de Studio
-   cp .env.example .env     # la primera vez: completá SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY
+   cp .env.example .env     # la primera vez: completá SUPABASE_URL y SUPABASE_SECRET_KEY
    pnpm dev                 # API (puerto 3000) + Vite (puerto 5173)
    ```
 3. Studio: http://127.0.0.1:54323 · App y API: los puertos 5173 y 3000 en la pestaña **Ports** de VS Code.
