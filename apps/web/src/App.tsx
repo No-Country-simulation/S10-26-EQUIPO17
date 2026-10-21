@@ -2,7 +2,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { PublicDashboard } from "./features/dashboard-public/views/PublicDashboard";
 import { NewChallengeForm } from "./features/project-submission/views/NewChallengeForm";
-import { ProjectTracking } from "./features/tracking/views/ProjectTracking";
+import { ProjectTracking } from "./features/tracking-project/views/ProjectTracking";
 
 const router = createBrowserRouter([
   {
