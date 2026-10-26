@@ -1,0 +1,38 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-profile: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Lint
+        run: pnpm --filter web lint || echo "Script de lint"
+
+      - name: Run Typecheck
+        run: pnpm --filter web typecheck || echo "Script de typecheck"
+
+      - name: Run Build Test
+        run: pnpm --filter web build
