@@ -10,6 +10,10 @@ create table public.companies (
   last_name text not null,
   job_position text not null,
   company_name text not null,
+  -- Allowed values are validated by the domain enums (Country, BusinessSector, ExplorationInterest).
+  country text not null,
+  business_sector text not null,
+  interests text[] not null,
   user_id uuid references public.users (id) on delete set null,
   created_at timestamptz not null default now()
 );

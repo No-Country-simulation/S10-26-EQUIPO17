@@ -1,5 +1,8 @@
 import { textoRequerido } from "../validaciones.js";
 import type { User } from "./user.js";
+import { Country } from "../value-objects/country.js";
+import { BusinessSector } from "../value-objects/business-sector.js";
+import { ExplorationInterest } from "../value-objects/exploration-interest.js";
 
 export interface CompanyProps {
   id: string;
@@ -7,6 +10,9 @@ export interface CompanyProps {
   lastName: string;
   jobPosition: string;
   companyName: string;
+  country: Country;
+  businessSector: BusinessSector;
+  interests: ExplorationInterest;
   user?: User | null;
 }
 
@@ -17,6 +23,9 @@ export class Company {
     readonly lastName: string,
     readonly jobPosition: string,
     readonly companyName: string,
+    readonly country: Country,
+    readonly businessSector: BusinessSector,
+    readonly interests: ExplorationInterest,
     readonly user: User | null,
   ) {}
 
@@ -27,6 +36,9 @@ export class Company {
       textoRequerido(props.lastName, "lastName"),
       textoRequerido(props.jobPosition, "jobPosition"),
       textoRequerido(props.companyName, "companyName"),
+      props.country,
+      props.businessSector,
+      props.interests,
       props.user ?? null,
     );
   }

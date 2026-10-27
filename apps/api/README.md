@@ -8,7 +8,7 @@ externas siguen el enfoque **hexagonal (puertos y adaptadores)**.
 ```
 src/
 ├── domain/                 1. Entidades: reglas de negocio puras
-│   ├── entities/           User, Company
+│   ├── entities/           User, Company, Country, BusinessSector, ExplorationInterest
 │   ├── value-objects/      Email
 │   ├── errors.ts           ValidacionError, NoEncontradoError, ConflictoError
 │   └── validaciones.ts
@@ -57,8 +57,8 @@ Los `import` solo pueden apuntar **hacia adentro**: `infrastructure → adapters
 | ------ | --------------- | --------------------------------------------------- | --------------------------------------------- |
 | GET    | `/`             | —                                                   | `{"status":"ok"}`                             |
 | POST   | `/users`        | `{ "email", "password" }`                           | `201 { id, email }` (el password nunca se devuelve) |
-| POST   | `/companies`    | `{ "firstName", "lastName", "jobPosition", "companyName", "userId"? }` | `201 { id, firstName, lastName, jobPosition, companyName, user }` |
-| GET    | `/companies/:id` | —                                                  | `200 { id, firstName, lastName, jobPosition, companyName, user }` |
+| POST   | `/companies`    | `{ "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "interests": [], "userId"? }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, interests, user }` |
+| GET    | `/companies/:id` | —                                                  | `200 { id, firstName, lastName, jobPosition, companyName, country, businessSector, interests, user }` |
 
 Errores: `{ "error": "mensaje" }` con `400` (validación o JSON mal formado), `404` (no existe) o
 `409` (email ya registrado).

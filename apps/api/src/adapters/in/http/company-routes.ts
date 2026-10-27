@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { CreateCompany } from "../../../application/ports/in/create-company.js";
 import type { GetCompany } from "../../../application/ports/in/get-company.js";
-import { leerCuerpo, leerTexto, leerTextoOpcional } from "./cuerpo.js";
+import { leerCuerpo, leerListaDeTextos, leerTexto, leerTextoOpcional } from "./cuerpo.js";
 import { companyToResponse } from "./respuestas.js";
 
 export function companyRoutes(createCompany: CreateCompany, getCompany: GetCompany): Router {
@@ -14,6 +14,9 @@ export function companyRoutes(createCompany: CreateCompany, getCompany: GetCompa
       lastName: leerTexto(cuerpo, "lastName"),
       jobPosition: leerTexto(cuerpo, "jobPosition"),
       companyName: leerTexto(cuerpo, "companyName"),
+      country: leerTexto(cuerpo, "country"),
+      businessSector: leerTexto(cuerpo, "businessSector"),
+      interests: leerListaDeTextos(cuerpo, "interests"),
       userId: leerTextoOpcional(cuerpo, "userId"),
     });
     res.status(201).json(companyToResponse(company));

@@ -1,7 +1,10 @@
 // Forma de las filas en Postgres (ver supabase/migrations) y su traducción a entidades.
 // El dominio no conoce nombres de columnas: eso queda encerrado acá.
 import type { PostgrestError } from "@supabase/supabase-js";
+import { BusinessSector } from "../../../../domain/value-objects/business-sector.js";
 import { Company } from "../../../../domain/entities/company.js";
+import { Country } from "../../../../domain/value-objects/country.js";
+import { ExplorationInterest } from "../../../../domain/value-objects/exploration-interest.js";
 import { User } from "../../../../domain/entities/user.js";
 import { ConflictoError } from "../../../../domain/errors.js";
 import { Email } from "../../../../domain/value-objects/email.js";
@@ -18,6 +21,9 @@ export interface CompanyRow {
   last_name: string;
   job_position: string;
   company_name: string;
+  country: string;
+  business_sector: string;
+  interests: string[];
   user_id: string | null;
 }
 
@@ -26,7 +32,7 @@ export type CompanyWithUserRow = Omit<CompanyRow, "user_id"> & {
 };
 
 export const USER_COLUMNS = "id, email, password_hash";
-export const COMPANY_WITH_USER_COLUMNS = `id, first_name, last_name, job_position, company_name, user:users(${USER_COLUMNS})`;
+export const COMPANY_WITH_USER_COLUMNS = `id, first_name, last_name, job_position, company_name, country, business_sector, interests, user:users(${USER_COLUMNS})`;
 
 export const userToRow = (user: User): UserRow => ({
   id: user.id,
@@ -47,6 +53,9 @@ export const companyToRow = (company: Company): CompanyRow => ({
   last_name: company.lastName,
   job_position: company.jobPosition,
   company_name: company.companyName,
+  country: company.country.getCountry(),
+  business_sector: company.businessSector.getSector(),
+  interests: company.interests.getInterest(),
   user_id: company.user?.id ?? null,
 });
 
@@ -57,6 +66,9 @@ export const rowToCompany = (row: CompanyWithUserRow): Company =>
     lastName: row.last_name,
     jobPosition: row.job_position,
     companyName: row.company_name,
+    country: new Country(row.country),
+    businessSector: new BusinessSector(row.business_sector),
+    interests: new ExplorationInterest(row.interests),
     user: row.user ? rowToUser(row.user) : null,
   });
 

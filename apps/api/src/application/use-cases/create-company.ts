@@ -1,7 +1,13 @@
+import { BusinessSector } from "../../domain/value-objects/business-sector.js";
 import { Company } from "../../domain/entities/company.js";
+import { Country } from "../../domain/value-objects/country.js";
+import { ExplorationInterest } from "../../domain/value-objects/exploration-interest.js";
 import type { User } from "../../domain/entities/user.js";
 import { NoEncontradoError } from "../../domain/errors.js";
-import type { CreateCompany, CreateCompanyData } from "../ports/in/create-company.js";
+import type {
+  CreateCompany,
+  CreateCompanyData,
+} from "../ports/in/create-company.js";
 import type { CompanyRepository } from "../ports/out/company-repository.js";
 import type { GeneradorDeIds } from "../ports/out/generador-de-ids.js";
 import type { UserRepository } from "../ports/out/user-repository.js";
@@ -28,6 +34,9 @@ export class CreateCompanyUseCase implements CreateCompany {
       lastName: data.lastName,
       jobPosition: data.jobPosition,
       companyName: data.companyName,
+      country: new Country(data.country),
+      businessSector: new BusinessSector(data.businessSector),
+      interests: new ExplorationInterest(data.interests),
       user,
     });
     await this.companies.save(company);

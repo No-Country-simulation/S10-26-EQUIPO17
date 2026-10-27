@@ -14,6 +14,12 @@ const data = {
   lastName: "García",
   jobPosition: "CTO",
   companyName: "Acme",
+  country: "Argentina",
+  businessSector: "Technology",
+  interests: [
+    "Evaluate talent in real work experience",
+    "Get multiple solutions for your project",
+  ],
 };
 
 describe("CreateCompany and GetCompany", () => {
@@ -24,7 +30,11 @@ describe("CreateCompany and GetCompany", () => {
   beforeEach(() => {
     users = new InMemoryUserRepository();
     const companies = new InMemoryCompanyRepository();
-    createCompany = new CreateCompanyUseCase(companies, users, new GeneradorDeIdsUuid());
+    createCompany = new CreateCompanyUseCase(
+      companies,
+      users,
+      new GeneradorDeIdsUuid(),
+    );
     getCompany = new GetCompanyUseCase(companies);
   });
 
@@ -35,6 +45,12 @@ describe("CreateCompany and GetCompany", () => {
     assert.equal(company.lastName, "García");
     assert.equal(company.jobPosition, "CTO");
     assert.equal(company.companyName, "Acme");
+    assert.equal(company.country.getCountry(), "Argentina");
+    assert.equal(company.businessSector.getSector(), "Technology");
+    assert.deepEqual(company.interests.getInterest(), [
+      "Evaluate talent in real work experience",
+      "Get multiple solutions for your project",
+    ]);
     assert.equal(company.user, null);
     assert.equal(await getCompany.execute(company.id), company);
   });
@@ -60,9 +76,42 @@ describe("CreateCompany and GetCompany", () => {
   });
 
   it("rejects empty required fields", async () => {
-    for (const field of ["firstName", "lastName", "jobPosition", "companyName"] as const) {
-      await assert.rejects(createCompany.execute({ ...data, [field]: "  " }), ValidacionError);
+    for (const field of [
+      "firstName",
+      "lastName",
+      "jobPosition",
+      "companyName",
+    ] as const) {
+      await assert.rejects(
+        createCompany.execute({ ...data, [field]: "  " }),
+        ValidacionError,
+      );
     }
+  });
+
+  it("rejects an invalid country, business sector or interest", async () => {
+    await assert.rejects(
+      createCompany.execute({ ...data, country: "Narnia" }),
+      ValidacionError,
+    );
+    await assert.rejects(
+      createCompany.execute({ ...data, businessSector: "Magic" }),
+      ValidacionError,
+    );
+    await assert.rejects(
+      createCompany.execute({
+        ...data,
+        interests: ["Evaluate talent in real work experience", "Nope"],
+      }),
+      ValidacionError,
+    );
+  });
+
+  it("rejects a company without interests", async () => {
+    await assert.rejects(
+      createCompany.execute({ ...data, interests: [] }),
+      ValidacionError,
+    );
   });
 
   it("fails to get a company that does not exist", async () => {

@@ -5,6 +5,9 @@ export interface CreateCompanyData {
   lastName: string;
   jobPosition: string;
   companyName: string;
+  country: string;
+  businessSector: string;
+  interests: string[];
   /** User that owns the company; optional. */
   userId?: string | null;
 }

@@ -52,6 +52,9 @@ describe("API HTTP", () => {
         lastName: "García",
         jobPosition: "CTO",
         companyName: "Acme",
+        country: "Argentina",
+        businessSector: "Technology",
+        interests: ["Evaluate talent in real work experience"],
         userId: user.id,
       }),
     );
@@ -66,6 +69,9 @@ describe("API HTTP", () => {
       lastName: "García",
       jobPosition: "CTO",
       companyName: "Acme",
+      country: "Argentina",
+      businessSector: "Technology",
+      interests: ["Evaluate talent in real work experience"],
       user: { id: user.id, email: "ana@ejemplo.com" },
     });
   });
@@ -79,8 +85,67 @@ describe("API HTTP", () => {
     assert.equal((await fetch(`${base}/companies/no-existe`)).status, 404);
   });
 
+  it("responde 400 ante un country, businessSector o interest inválido", async () => {
+    const valid = {
+      firstName: "Ana",
+      lastName: "García",
+      jobPosition: "CTO",
+      companyName: "Acme",
+      country: "Argentina",
+      businessSector: "Technology",
+      interests: ["Evaluate talent in real work experience"],
+    };
+    const cases = [
+      { override: { country: "Narnia" }, error: "Invalid country: Narnia" },
+      { override: { businessSector: "Magic" }, error: "Invalid business sector: Magic" },
+      { override: { interests: ["Nope"] }, error: "Invalid interests: Nope" },
+      { override: { interests: [] }, error: "At least one interest is required" },
+    ];
+
+    for (const { override, error } of cases) {
+      const res = await post("/companies", JSON.stringify({ ...valid, ...override }));
+      assert.equal(res.status, 400, JSON.stringify(override));
+      assert.deepEqual(await res.json(), { error });
+    }
+  });
+
+  it("responde 400 si interests no es una lista de textos", async () => {
+    const res = await post(
+      "/companies",
+      JSON.stringify({
+        firstName: "Ana",
+        lastName: "García",
+        jobPosition: "CTO",
+        companyName: "Acme",
+        country: "Argentina",
+        businessSector: "Technology",
+        interests: "Evaluate talent in real work experience",
+      }),
+    );
+    assert.equal(res.status, 400);
+  });
+
   it("responde 400 ante JSON mal formado", async () => {
     const res = await post("/companies", "{ no es json");
     assert.equal(res.status, 400);
+  });
+
+  it("responde 404 al crear una company con un userId inexistente", async () => {
+    const res = await post(
+      "/companies",
+      JSON.stringify({
+        firstName: "Ana",
+        lastName: "García",
+        jobPosition: "CTO",
+        companyName: "Acme",
+        country: "Argentina",
+        businessSector: "Technology",
+        interests: ["Evaluate talent in real work experience"],
+        userId: "no-existe",
+      }),
+    );
+
+    assert.equal(res.status, 404);
+    assert.deepEqual(await res.json(), { error: "User no-existe does not exist" });
   });
 });
