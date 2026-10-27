@@ -36,7 +36,7 @@ describe("API HTTP", () => {
     assert.deepEqual(await res.json(), { status: "ok" });
   });
 
-  it("registra un usuario sin exponer la clave y crea una empresa asociada", async () => {
+  it("registra un usuario sin exponer la clave y crea una company asociada", async () => {
     const resUser = await post(
       "/users",
       JSON.stringify({ email: "ana@ejemplo.com", password: "clave-segura" }),
@@ -45,19 +45,27 @@ describe("API HTTP", () => {
     const user = (await resUser.json()) as Record<string, unknown>;
     assert.deepEqual(Object.keys(user).sort(), ["email", "id"]);
 
-    const resEmpresa = await post(
-      "/empresas",
-      JSON.stringify({ nombre: "Acme", pais: "Argentina", userId: user.id }),
+    const resCompany = await post(
+      "/companies",
+      JSON.stringify({
+        firstName: "Ana",
+        lastName: "García",
+        jobPosition: "CTO",
+        companyName: "Acme",
+        userId: user.id,
+      }),
     );
-    assert.equal(resEmpresa.status, 201);
-    const empresa = (await resEmpresa.json()) as { id: string };
+    assert.equal(resCompany.status, 201);
+    const company = (await resCompany.json()) as { id: string };
 
-    const resGet = await fetch(`${base}/empresas/${empresa.id}`);
+    const resGet = await fetch(`${base}/companies/${company.id}`);
     assert.equal(resGet.status, 200);
     assert.deepEqual(await resGet.json(), {
-      id: empresa.id,
-      nombre: "Acme",
-      pais: "Argentina",
+      id: company.id,
+      firstName: "Ana",
+      lastName: "García",
+      jobPosition: "CTO",
+      companyName: "Acme",
       user: { id: user.id, email: "ana@ejemplo.com" },
     });
   });
@@ -67,12 +75,12 @@ describe("API HTTP", () => {
     assert.equal((await post("/users", duplicado)).status, 201);
     assert.equal((await post("/users", duplicado)).status, 409);
 
-    assert.equal((await post("/empresas", JSON.stringify({ nombre: "Acme" }))).status, 400);
-    assert.equal((await fetch(`${base}/empresas/no-existe`)).status, 404);
+    assert.equal((await post("/companies", JSON.stringify({ companyName: "Acme" }))).status, 400);
+    assert.equal((await fetch(`${base}/companies/no-existe`)).status, 404);
   });
 
   it("responde 400 ante JSON mal formado", async () => {
-    const res = await post("/empresas", "{ no es json");
+    const res = await post("/companies", "{ no es json");
     assert.equal(res.status, 400);
   });
 });

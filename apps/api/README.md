@@ -8,12 +8,12 @@ externas siguen el enfoque **hexagonal (puertos y adaptadores)**.
 ```
 src/
 ├── domain/                 1. Entidades: reglas de negocio puras
-│   ├── entities/           User, Empresa
+│   ├── entities/           User, Company
 │   ├── value-objects/      Email
 │   ├── errors.ts           ValidacionError, NoEncontradoError, ConflictoError
 │   └── validaciones.ts
 ├── application/            2. Casos de uso
-│   ├── use-cases/          RegisterUser, CrearEmpresa, ObtenerEmpresa
+│   ├── use-cases/          RegisterUser, CreateCompany, GetCompany
 │   └── ports/
 │       ├── in/             Lo que la aplicación ofrece (interfaces de los casos de uso)
 │       └── out/            Lo que la aplicación necesita (repositorios, hasher, ids)
@@ -57,8 +57,8 @@ Los `import` solo pueden apuntar **hacia adentro**: `infrastructure → adapters
 | ------ | --------------- | --------------------------------------------------- | --------------------------------------------- |
 | GET    | `/`             | —                                                   | `{"status":"ok"}`                             |
 | POST   | `/users`        | `{ "email", "password" }`                           | `201 { id, email }` (el password nunca se devuelve) |
-| POST   | `/empresas`     | `{ "nombre", "pais", "userId"? }`                   | `201 { id, nombre, pais, user }`              |
-| GET    | `/empresas/:id` | —                                                   | `200 { id, nombre, pais, user }`              |
+| POST   | `/companies`    | `{ "firstName", "lastName", "jobPosition", "companyName", "userId"? }` | `201 { id, firstName, lastName, jobPosition, companyName, user }` |
+| GET    | `/companies/:id` | —                                                  | `200 { id, firstName, lastName, jobPosition, companyName, user }` |
 
 Errores: `{ "error": "mensaje" }` con `400` (validación o JSON mal formado), `404` (no existe) o
 `409` (email ya registrado).

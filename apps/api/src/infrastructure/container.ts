@@ -1,19 +1,19 @@
 // Composition root: el único lugar que conoce las implementaciones concretas
 // y las conecta con los puertos que piden los casos de uso.
-import type { CrearEmpresa } from "../application/ports/in/crear-empresa.js";
-import type { ObtenerEmpresa } from "../application/ports/in/obtener-empresa.js";
+import type { CreateCompany } from "../application/ports/in/create-company.js";
+import type { GetCompany } from "../application/ports/in/get-company.js";
 import type { RegisterUser } from "../application/ports/in/register-user.js";
 import type { GeneradorDeIds } from "../application/ports/out/generador-de-ids.js";
 import type { HasherDeClaves } from "../application/ports/out/hasher-de-claves.js";
-import type { RepositorioDeEmpresas } from "../application/ports/out/repositorio-de-empresas.js";
+import type { CompanyRepository } from "../application/ports/out/company-repository.js";
 import type { UserRepository } from "../application/ports/out/user-repository.js";
-import { CrearEmpresaCasoDeUso } from "../application/use-cases/crear-empresa.js";
-import { ObtenerEmpresaCasoDeUso } from "../application/use-cases/obtener-empresa.js";
+import { CreateCompanyUseCase } from "../application/use-cases/create-company.js";
+import { GetCompanyUseCase } from "../application/use-cases/get-company.js";
 import { RegisterUserUseCase } from "../application/use-cases/register-user.js";
 import { GeneradorDeIdsUuid } from "../adapters/out/ids/generador-de-ids-uuid.js";
-import { RepositorioDeEmpresasEnMemoria } from "../adapters/out/persistence/memory/repositorio-de-empresas-en-memoria.js";
+import { InMemoryCompanyRepository } from "../adapters/out/persistence/memory/in-memory-company-repository.js";
 import { InMemoryUserRepository } from "../adapters/out/persistence/memory/in-memory-user-repository.js";
-import { RepositorioDeEmpresasSupabase } from "../adapters/out/persistence/supabase/repositorio-de-empresas-supabase.js";
+import { SupabaseCompanyRepository } from "../adapters/out/persistence/supabase/supabase-company-repository.js";
 import { SupabaseUserRepository } from "../adapters/out/persistence/supabase/supabase-user-repository.js";
 import { HasherDeClavesScrypt } from "../adapters/out/security/hasher-de-claves-scrypt.js";
 import type { Config } from "./config/env.js";
@@ -22,7 +22,7 @@ import { crearClienteSupabase } from "./supabase/client.js";
 /** Puertos de salida que necesitan los casos de uso. */
 export interface Dependencias {
   users: UserRepository;
-  empresas: RepositorioDeEmpresas;
+  companies: CompanyRepository;
   hasher: HasherDeClaves;
   ids: GeneradorDeIds;
 }
@@ -30,8 +30,8 @@ export interface Dependencias {
 /** Puertos de entrada que consume el adaptador HTTP. */
 export interface CasosDeUso {
   registerUser: RegisterUser;
-  crearEmpresa: CrearEmpresa;
-  obtenerEmpresa: ObtenerEmpresa;
+  createCompany: CreateCompany;
+  getCompany: GetCompany;
 }
 
 export function crearDependencias(config: Config): Dependencias {
@@ -41,7 +41,7 @@ export function crearDependencias(config: Config): Dependencias {
     return {
       ...comunes,
       users: new InMemoryUserRepository(),
-      empresas: new RepositorioDeEmpresasEnMemoria(),
+      companies: new InMemoryCompanyRepository(),
     };
   }
 
@@ -49,14 +49,14 @@ export function crearDependencias(config: Config): Dependencias {
   return {
     ...comunes,
     users: new SupabaseUserRepository(supabase),
-    empresas: new RepositorioDeEmpresasSupabase(supabase),
+    companies: new SupabaseCompanyRepository(supabase),
   };
 }
 
-export function crearCasosDeUso({ users, empresas, hasher, ids }: Dependencias): CasosDeUso {
+export function crearCasosDeUso({ users, companies, hasher, ids }: Dependencias): CasosDeUso {
   return {
     registerUser: new RegisterUserUseCase(users, hasher, ids),
-    crearEmpresa: new CrearEmpresaCasoDeUso(empresas, users, ids),
-    obtenerEmpresa: new ObtenerEmpresaCasoDeUso(empresas),
+    createCompany: new CreateCompanyUseCase(companies, users, ids),
+    getCompany: new GetCompanyUseCase(companies),
   };
 }

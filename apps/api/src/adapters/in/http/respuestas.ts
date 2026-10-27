@@ -1,4 +1,4 @@
-import type { Empresa } from "../../../domain/entities/empresa.js";
+import type { Company } from "../../../domain/entities/company.js";
 import type { User } from "../../../domain/entities/user.js";
 
 // DTOs de salida. El password (aunque esté hasheado) nunca sale de la API.
@@ -7,10 +7,12 @@ export interface UserResponse {
   email: string;
 }
 
-export interface EmpresaRespuesta {
+export interface CompanyResponse {
   id: string;
-  nombre: string;
-  pais: string;
+  firstName: string;
+  lastName: string;
+  jobPosition: string;
+  companyName: string;
   user: UserResponse | null;
 }
 
@@ -19,9 +21,11 @@ export const userToResponse = (user: User): UserResponse => ({
   email: user.email.value,
 });
 
-export const empresaARespuesta = (empresa: Empresa): EmpresaRespuesta => ({
-  id: empresa.id,
-  nombre: empresa.nombre,
-  pais: empresa.pais,
-  user: empresa.user ? userToResponse(empresa.user) : null,
+export const companyToResponse = (company: Company): CompanyResponse => ({
+  id: company.id,
+  firstName: company.firstName,
+  lastName: company.lastName,
+  jobPosition: company.jobPosition,
+  companyName: company.companyName,
+  user: company.user ? userToResponse(company.user) : null,
 });
