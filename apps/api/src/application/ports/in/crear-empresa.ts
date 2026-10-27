@@ -3,8 +3,8 @@ import type { Empresa } from "../../../domain/entities/empresa.js";
 export interface CrearEmpresaDatos {
   nombre: string;
   pais: string;
-  /** Usuario dueño de la empresa; opcional. */
-  usuarioId?: string | null;
+  /** User dueño de la empresa; opcional. */
+  userId?: string | null;
 }
 
 export interface CrearEmpresa {

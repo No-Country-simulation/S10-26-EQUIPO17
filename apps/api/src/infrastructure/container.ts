@@ -2,26 +2,26 @@
 // y las conecta con los puertos que piden los casos de uso.
 import type { CrearEmpresa } from "../application/ports/in/crear-empresa.js";
 import type { ObtenerEmpresa } from "../application/ports/in/obtener-empresa.js";
-import type { RegistrarUsuario } from "../application/ports/in/registrar-usuario.js";
+import type { RegisterUser } from "../application/ports/in/register-user.js";
 import type { GeneradorDeIds } from "../application/ports/out/generador-de-ids.js";
 import type { HasherDeClaves } from "../application/ports/out/hasher-de-claves.js";
 import type { RepositorioDeEmpresas } from "../application/ports/out/repositorio-de-empresas.js";
-import type { RepositorioDeUsuarios } from "../application/ports/out/repositorio-de-usuarios.js";
+import type { UserRepository } from "../application/ports/out/user-repository.js";
 import { CrearEmpresaCasoDeUso } from "../application/use-cases/crear-empresa.js";
 import { ObtenerEmpresaCasoDeUso } from "../application/use-cases/obtener-empresa.js";
-import { RegistrarUsuarioCasoDeUso } from "../application/use-cases/registrar-usuario.js";
+import { RegisterUserUseCase } from "../application/use-cases/register-user.js";
 import { GeneradorDeIdsUuid } from "../adapters/out/ids/generador-de-ids-uuid.js";
 import { RepositorioDeEmpresasEnMemoria } from "../adapters/out/persistence/memory/repositorio-de-empresas-en-memoria.js";
-import { RepositorioDeUsuariosEnMemoria } from "../adapters/out/persistence/memory/repositorio-de-usuarios-en-memoria.js";
+import { InMemoryUserRepository } from "../adapters/out/persistence/memory/in-memory-user-repository.js";
 import { RepositorioDeEmpresasSupabase } from "../adapters/out/persistence/supabase/repositorio-de-empresas-supabase.js";
-import { RepositorioDeUsuariosSupabase } from "../adapters/out/persistence/supabase/repositorio-de-usuarios-supabase.js";
+import { SupabaseUserRepository } from "../adapters/out/persistence/supabase/supabase-user-repository.js";
 import { HasherDeClavesScrypt } from "../adapters/out/security/hasher-de-claves-scrypt.js";
 import type { Config } from "./config/env.js";
 import { crearClienteSupabase } from "./supabase/client.js";
 
 /** Puertos de salida que necesitan los casos de uso. */
 export interface Dependencias {
-  usuarios: RepositorioDeUsuarios;
+  users: UserRepository;
   empresas: RepositorioDeEmpresas;
   hasher: HasherDeClaves;
   ids: GeneradorDeIds;
@@ -29,7 +29,7 @@ export interface Dependencias {
 
 /** Puertos de entrada que consume el adaptador HTTP. */
 export interface CasosDeUso {
-  registrarUsuario: RegistrarUsuario;
+  registerUser: RegisterUser;
   crearEmpresa: CrearEmpresa;
   obtenerEmpresa: ObtenerEmpresa;
 }
@@ -40,7 +40,7 @@ export function crearDependencias(config: Config): Dependencias {
   if (config.supabase === null) {
     return {
       ...comunes,
-      usuarios: new RepositorioDeUsuariosEnMemoria(),
+      users: new InMemoryUserRepository(),
       empresas: new RepositorioDeEmpresasEnMemoria(),
     };
   }
@@ -48,15 +48,15 @@ export function crearDependencias(config: Config): Dependencias {
   const supabase = crearClienteSupabase(config.supabase.url, config.supabase.claveSecreta);
   return {
     ...comunes,
-    usuarios: new RepositorioDeUsuariosSupabase(supabase),
+    users: new SupabaseUserRepository(supabase),
     empresas: new RepositorioDeEmpresasSupabase(supabase),
   };
 }
 
-export function crearCasosDeUso({ usuarios, empresas, hasher, ids }: Dependencias): CasosDeUso {
+export function crearCasosDeUso({ users, empresas, hasher, ids }: Dependencias): CasosDeUso {
   return {
-    registrarUsuario: new RegistrarUsuarioCasoDeUso(usuarios, hasher, ids),
-    crearEmpresa: new CrearEmpresaCasoDeUso(empresas, usuarios, ids),
+    registerUser: new RegisterUserUseCase(users, hasher, ids),
+    crearEmpresa: new CrearEmpresaCasoDeUso(empresas, users, ids),
     obtenerEmpresa: new ObtenerEmpresaCasoDeUso(empresas),
   };
 }

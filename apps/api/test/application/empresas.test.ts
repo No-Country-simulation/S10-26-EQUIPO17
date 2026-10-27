@@ -4,20 +4,20 @@ import { CrearEmpresaCasoDeUso } from "../../src/application/use-cases/crear-emp
 import { ObtenerEmpresaCasoDeUso } from "../../src/application/use-cases/obtener-empresa.js";
 import { GeneradorDeIdsUuid } from "../../src/adapters/out/ids/generador-de-ids-uuid.js";
 import { RepositorioDeEmpresasEnMemoria } from "../../src/adapters/out/persistence/memory/repositorio-de-empresas-en-memoria.js";
-import { RepositorioDeUsuariosEnMemoria } from "../../src/adapters/out/persistence/memory/repositorio-de-usuarios-en-memoria.js";
-import { Usuario } from "../../src/domain/entities/usuario.js";
+import { InMemoryUserRepository } from "../../src/adapters/out/persistence/memory/in-memory-user-repository.js";
+import { User } from "../../src/domain/entities/user.js";
 import { NoEncontradoError, ValidacionError } from "../../src/domain/errors.js";
-import { Correo } from "../../src/domain/value-objects/correo.js";
+import { Email } from "../../src/domain/value-objects/email.js";
 
 describe("CrearEmpresa y ObtenerEmpresa", () => {
-  let usuarios: RepositorioDeUsuariosEnMemoria;
+  let users: InMemoryUserRepository;
   let crearEmpresa: CrearEmpresaCasoDeUso;
   let obtenerEmpresa: ObtenerEmpresaCasoDeUso;
 
   beforeEach(() => {
-    usuarios = new RepositorioDeUsuariosEnMemoria();
+    users = new InMemoryUserRepository();
     const empresas = new RepositorioDeEmpresasEnMemoria();
-    crearEmpresa = new CrearEmpresaCasoDeUso(empresas, usuarios, new GeneradorDeIdsUuid());
+    crearEmpresa = new CrearEmpresaCasoDeUso(empresas, users, new GeneradorDeIdsUuid());
     obtenerEmpresa = new ObtenerEmpresaCasoDeUso(empresas);
   });
 
@@ -25,30 +25,30 @@ describe("CrearEmpresa y ObtenerEmpresa", () => {
     const empresa = await crearEmpresa.ejecutar({ nombre: " Acme ", pais: "Argentina" });
 
     assert.equal(empresa.nombre, "Acme");
-    assert.equal(empresa.usuario, null);
+    assert.equal(empresa.user, null);
     assert.equal(await obtenerEmpresa.ejecutar(empresa.id), empresa);
   });
 
   it("crea una empresa asociada a un usuario existente", async () => {
-    const usuario = Usuario.crear({
+    const user = User.create({
       id: "u-1",
-      correo: Correo.crear("ana@ejemplo.com"),
-      clave: "hash",
+      email: Email.create("ana@ejemplo.com"),
+      passwordHash: "hash",
     });
-    await usuarios.guardar(usuario);
+    await users.save(user);
 
     const empresa = await crearEmpresa.ejecutar({
       nombre: "Acme",
       pais: "Argentina",
-      usuarioId: "u-1",
+      userId: "u-1",
     });
 
-    assert.equal(empresa.usuario, usuario);
+    assert.equal(empresa.user, user);
   });
 
   it("rechaza un usuario inexistente", async () => {
     await assert.rejects(
-      crearEmpresa.ejecutar({ nombre: "Acme", pais: "Argentina", usuarioId: "no-existe" }),
+      crearEmpresa.ejecutar({ nombre: "Acme", pais: "Argentina", userId: "no-existe" }),
       NoEncontradoError,
     );
   });

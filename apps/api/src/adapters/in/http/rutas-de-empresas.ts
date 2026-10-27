@@ -15,7 +15,7 @@ export function rutasDeEmpresas(
     const empresa = await crearEmpresa.ejecutar({
       nombre: leerTexto(cuerpo, "nombre"),
       pais: leerTexto(cuerpo, "pais"),
-      usuarioId: leerTextoOpcional(cuerpo, "usuarioId"),
+      userId: leerTextoOpcional(cuerpo, "userId"),
     });
     res.status(201).json(empresaARespuesta(empresa));
   });

@@ -2,56 +2,56 @@
 // El dominio no conoce nombres de columnas: eso queda encerrado acá.
 import type { PostgrestError } from "@supabase/supabase-js";
 import { Empresa } from "../../../../domain/entities/empresa.js";
-import { Usuario } from "../../../../domain/entities/usuario.js";
+import { User } from "../../../../domain/entities/user.js";
 import { ConflictoError } from "../../../../domain/errors.js";
-import { Correo } from "../../../../domain/value-objects/correo.js";
+import { Email } from "../../../../domain/value-objects/email.js";
 
-export interface FilaUsuario {
+export interface UserRow {
   id: string;
-  correo: string;
-  clave_hash: string;
+  email: string;
+  password_hash: string;
 }
 
 export interface FilaEmpresa {
   id: string;
   nombre: string;
   pais: string;
-  usuario_id: string | null;
+  user_id: string | null;
 }
 
-export type FilaEmpresaConUsuario = Omit<FilaEmpresa, "usuario_id"> & {
-  usuario: FilaUsuario | null;
+export type FilaEmpresaConUser = Omit<FilaEmpresa, "user_id"> & {
+  user: UserRow | null;
 };
 
-export const COLUMNAS_USUARIO = "id, correo, clave_hash";
-export const COLUMNAS_EMPRESA_CON_USUARIO = `id, nombre, pais, usuario:usuarios(${COLUMNAS_USUARIO})`;
+export const USER_COLUMNS = "id, email, password_hash";
+export const COLUMNAS_EMPRESA_CON_USER = `id, nombre, pais, user:users(${USER_COLUMNS})`;
 
-export const usuarioAFila = (usuario: Usuario): FilaUsuario => ({
-  id: usuario.id,
-  correo: usuario.correo.valor,
-  clave_hash: usuario.clave,
+export const userToRow = (user: User): UserRow => ({
+  id: user.id,
+  email: user.email.value,
+  password_hash: user.passwordHash,
 });
 
-export const filaAUsuario = (fila: FilaUsuario): Usuario =>
-  Usuario.crear({
-    id: fila.id,
-    correo: Correo.crear(fila.correo),
-    clave: fila.clave_hash,
+export const rowToUser = (row: UserRow): User =>
+  User.create({
+    id: row.id,
+    email: Email.create(row.email),
+    passwordHash: row.password_hash,
   });
 
 export const empresaAFila = (empresa: Empresa): FilaEmpresa => ({
   id: empresa.id,
   nombre: empresa.nombre,
   pais: empresa.pais,
-  usuario_id: empresa.usuario?.id ?? null,
+  user_id: empresa.user?.id ?? null,
 });
 
-export const filaAEmpresa = (fila: FilaEmpresaConUsuario): Empresa =>
+export const filaAEmpresa = (fila: FilaEmpresaConUser): Empresa =>
   Empresa.crear({
     id: fila.id,
     nombre: fila.nombre,
     pais: fila.pais,
-    usuario: fila.usuario ? filaAUsuario(fila.usuario) : null,
+    user: fila.user ? rowToUser(fila.user) : null,
   });
 
 // Códigos de error de Postgres que el adaptador traduce.

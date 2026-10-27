@@ -1,11 +1,11 @@
 import { textoRequerido } from "../validaciones.js";
-import type { Usuario } from "./usuario.js";
+import type { User } from "./user.js";
 
 export interface EmpresaProps {
   id: string;
   nombre: string;
   pais: string;
-  usuario?: Usuario | null;
+  user?: User | null;
 }
 
 export class Empresa {
@@ -13,7 +13,7 @@ export class Empresa {
     readonly id: string,
     readonly nombre: string,
     readonly pais: string,
-    readonly usuario: Usuario | null,
+    readonly user: User | null,
   ) {}
 
   static crear(props: EmpresaProps): Empresa {
@@ -21,7 +21,7 @@ export class Empresa {
       textoRequerido(props.id, "id"),
       textoRequerido(props.nombre, "nombre"),
       textoRequerido(props.pais, "pais"),
-      props.usuario ?? null,
+      props.user ?? null,
     );
   }
 }

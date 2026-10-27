@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import { manejadorDeErrores } from "../../adapters/in/http/manejador-de-errores.js";
 import { rutasDeEmpresas } from "../../adapters/in/http/rutas-de-empresas.js";
-import { rutasDeUsuarios } from "../../adapters/in/http/rutas-de-usuarios.js";
+import { userRoutes } from "../../adapters/in/http/user-routes.js";
 import type { CasosDeUso } from "../container.js";
 
 export function crearApp(casos: CasosDeUso): Express {
@@ -11,7 +11,7 @@ export function crearApp(casos: CasosDeUso): Express {
   app.get("/", (_req, res) => {
     res.json({ status: "ok" });
   });
-  app.use("/usuarios", rutasDeUsuarios(casos.registrarUsuario));
+  app.use("/users", userRoutes(casos.registerUser));
   app.use("/empresas", rutasDeEmpresas(casos.crearEmpresa, casos.obtenerEmpresa));
 
   app.use((_req, res) => {

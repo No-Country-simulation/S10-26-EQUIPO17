@@ -37,17 +37,17 @@ describe("API HTTP", () => {
   });
 
   it("registra un usuario sin exponer la clave y crea una empresa asociada", async () => {
-    const resUsuario = await post(
-      "/usuarios",
-      JSON.stringify({ correo: "ana@ejemplo.com", clave: "clave-segura" }),
+    const resUser = await post(
+      "/users",
+      JSON.stringify({ email: "ana@ejemplo.com", password: "clave-segura" }),
     );
-    assert.equal(resUsuario.status, 201);
-    const usuario = (await resUsuario.json()) as Record<string, unknown>;
-    assert.deepEqual(Object.keys(usuario).sort(), ["correo", "id"]);
+    assert.equal(resUser.status, 201);
+    const user = (await resUser.json()) as Record<string, unknown>;
+    assert.deepEqual(Object.keys(user).sort(), ["email", "id"]);
 
     const resEmpresa = await post(
       "/empresas",
-      JSON.stringify({ nombre: "Acme", pais: "Argentina", usuarioId: usuario.id }),
+      JSON.stringify({ nombre: "Acme", pais: "Argentina", userId: user.id }),
     );
     assert.equal(resEmpresa.status, 201);
     const empresa = (await resEmpresa.json()) as { id: string };
@@ -58,14 +58,14 @@ describe("API HTTP", () => {
       id: empresa.id,
       nombre: "Acme",
       pais: "Argentina",
-      usuario: { id: usuario.id, correo: "ana@ejemplo.com" },
+      user: { id: user.id, email: "ana@ejemplo.com" },
     });
   });
 
   it("traduce los errores de dominio a códigos HTTP", async () => {
-    const duplicado = JSON.stringify({ correo: "dup@ejemplo.com", clave: "clave-segura" });
-    assert.equal((await post("/usuarios", duplicado)).status, 201);
-    assert.equal((await post("/usuarios", duplicado)).status, 409);
+    const duplicado = JSON.stringify({ email: "dup@ejemplo.com", password: "clave-segura" });
+    assert.equal((await post("/users", duplicado)).status, 201);
+    assert.equal((await post("/users", duplicado)).status, 409);
 
     assert.equal((await post("/empresas", JSON.stringify({ nombre: "Acme" }))).status, 400);
     assert.equal((await fetch(`${base}/empresas/no-existe`)).status, 404);
