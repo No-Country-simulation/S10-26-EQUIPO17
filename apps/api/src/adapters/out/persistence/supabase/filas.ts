@@ -12,7 +12,6 @@ import { Email } from "../../../../domain/value-objects/email.js";
 export interface UserRow {
   id: string;
   email: string;
-  password_hash: string;
 }
 
 export interface CompanyRow {
@@ -31,20 +30,13 @@ export type CompanyWithUserRow = Omit<CompanyRow, "user_id"> & {
   user: UserRow | null;
 };
 
-export const USER_COLUMNS = "id, email, password_hash";
+export const USER_COLUMNS = "id, email";
 export const COMPANY_WITH_USER_COLUMNS = `id, first_name, last_name, job_position, company_name, country, business_sector, interests, user:users(${USER_COLUMNS})`;
-
-export const userToRow = (user: User): UserRow => ({
-  id: user.id,
-  email: user.email.value,
-  password_hash: user.passwordHash,
-});
 
 export const rowToUser = (row: UserRow): User =>
   User.create({
     id: row.id,
     email: Email.create(row.email),
-    passwordHash: row.password_hash,
   });
 
 export const companyToRow = (company: Company): CompanyRow => ({

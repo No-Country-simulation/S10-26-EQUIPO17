@@ -16,13 +16,13 @@ src/
 │   ├── use-cases/          RegisterUser, CreateCompany, GetCompany
 │   └── ports/
 │       ├── in/             Lo que la aplicación ofrece (interfaces de los casos de uso)
-│       └── out/            Lo que la aplicación necesita (repositorios, hasher, ids)
+│       └── out/            Lo que la aplicación necesita (repositorios, autenticación, ids)
 ├── adapters/               3. Adaptadores de interfaz
 │   ├── in/http/            Adaptador primario: rutas Express, lectura del body, DTOs, errores → HTTP
 │   └── out/                Adaptadores secundarios: implementan ports/out
 │       ├── persistence/supabase/
 │       ├── persistence/memory/
-│       ├── security/       Hash de claves con scrypt
+│       ├── auth/           Registro en Supabase Auth (y su doble en memoria)
 │       └── ids/            UUID
 ├── infrastructure/         4. Frameworks y drivers
 │   ├── config/env.ts       Lectura y validación de variables de entorno

@@ -2,7 +2,10 @@ import type { UserRepository } from "../../../../application/ports/out/user-repo
 import type { User } from "../../../../domain/entities/user.js";
 import type { Email } from "../../../../domain/value-objects/email.js";
 
-/** In-memory implementation of the port. Used by tests and to develop without a database. */
+/**
+ * In-memory implementation of the port. Used by tests and to develop without a database.
+ * save and findByEmail are not part of the port: InMemoryAuthProvider uses them to mimic the trigger.
+ */
 export class InMemoryUserRepository implements UserRepository {
   private readonly users = new Map<string, User>();
 

@@ -1,8 +1,6 @@
 import type { User } from "../../../domain/entities/user.js";
-import type { Email } from "../../../domain/value-objects/email.js";
 
+// Read-only: users are created by the auth provider (see AuthProvider).
 export interface UserRepository {
-  save(user: User): Promise<void>;
   findById(id: string): Promise<User | null>;
-  findByEmail(email: Email): Promise<User | null>;
 }

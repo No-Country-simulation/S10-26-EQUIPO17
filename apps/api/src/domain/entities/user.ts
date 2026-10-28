@@ -4,29 +4,23 @@ import type { Email } from "../value-objects/email.js";
 
 export const MIN_PASSWORD_LENGTH = 8;
 
+/** Credentials live in the auth provider, so the entity never holds a password. */
 export interface UserProps {
   id: string;
   email: Email;
-  /** Password hash. The plain-text password is never stored in the entity. */
-  passwordHash: string;
 }
 
 export class User {
   private constructor(
     readonly id: string,
     readonly email: Email,
-    readonly passwordHash: string,
   ) {}
 
   static create(props: UserProps): User {
-    return new User(
-      textoRequerido(props.id, "id"),
-      props.email,
-      textoRequerido(props.passwordHash, "passwordHash"),
-    );
+    return new User(textoRequerido(props.id, "id"), props.email);
   }
 
-  /** Business rule on the chosen password, before hashing it. */
+  /** Business rule on the chosen password, before handing it to the auth provider. */
   static validatePlainPassword(plainPassword: string): void {
     if (plainPassword.length < MIN_PASSWORD_LENGTH) {
       throw new ValidacionError(

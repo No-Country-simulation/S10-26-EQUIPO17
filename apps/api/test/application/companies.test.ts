@@ -59,7 +59,6 @@ describe("CreateCompany and GetCompany", () => {
     const user = User.create({
       id: "u-1",
       email: Email.create("ana@ejemplo.com"),
-      passwordHash: "hash",
     });
     await users.save(user);
 
