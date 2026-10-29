@@ -62,6 +62,8 @@ Definidas en `.env` (raíz), a partir de `.env.example`:
 | `SUPABASE_URL`             | URL de la API de Supabase. Dentro del contenedor: `http://host.docker.internal:54321`. |
 | `PERSISTENCIA`             | `supabase` (por defecto) o `memoria` para correr la API sin base de datos.             |
 | `SUPABASE_SECRET_KEY`      | Clave secreta para la API, se obtiene con `pnpm supabase status`. Nunca va al frontend. |
+| `COOKIE_SAME_SITE`         | `SameSite` de las cookies de sesión: `lax` (por defecto), `strict` o `none`. `none` solo si la web y la API están en sitios distintos. |
+| `COOKIE_SECURE`            | `true` (por defecto) o `false`. Usar `false` solo en desarrollo sobre http. `none` requiere `true`. |
 
 ### URLs de Supabase: contenedor vs. navegador
 
@@ -83,6 +85,7 @@ La app de React corre en el navegador, así que debe usar `127.0.0.1`, nunca `ho
 | Supabase CLI           | Instalado como devDependency en la raíz; se usa con `pnpm supabase`.                                                                                                                    |
 | Backend                | Express 5 + TypeScript, con Clean Architecture y puertos y adaptadores en las capas externas. Ver [`apps/api/README.md`](apps/api/README.md).                                    |
 | Acceso a Supabase      | Solo desde la API con la clave secreta. Las tablas tienen RLS sin políticas, así que la clave publicable no puede leerlas.                                                     |
+| Sesión                 | Supabase Auth emite los tokens y la API los entrega en cookies `HttpOnly`. El rol del usuario vive en `app_metadata` de Supabase Auth. Ver [`apps/api/README.md`](apps/api/README.md#sesión).          |
 | Supabase en desarrollo | Corre en el Docker del host (`docker-outside-of-docker`), no dentro del contenedor.                                                                                                     |
 | Vite en el contenedor  | Escucha en `127.0.0.1` (`server.host`) para que funcione el reenvío de puertos de VS Code sin exponerlo en el host. Ver [problemas comunes](.devcontainer/README.md#problemas-comunes). |
 
@@ -91,3 +94,6 @@ La app de React corre en el navegador, así que debe usar `127.0.0.1`, nunca `ho
 - [x] Tests unitarios de la API (`node:test`).
 - [ ] Tests e2e con Playwright.
 - [ ] CI en GitHub Actions (build y validación de migraciones).
+- [ ] CORS con credenciales en la API, necesario porque la web y la API van en dominios distintos.
+- [ ] Endpoints de refresh y logout, y middleware que valide la cookie de sesión.
+- [ ] Eliminar `POST /users` y el campo `userId` de `POST /companies` cuando el frontend use `POST /companies/register`.
