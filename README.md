@@ -96,4 +96,5 @@ La app de React corre en el navegador, así que debe usar `127.0.0.1`, nunca `ho
 - [ ] CI en GitHub Actions (build y validación de migraciones).
 - [ ] CORS con credenciales en la API, necesario porque la web y la API van en dominios distintos.
 - [ ] Endpoints de refresh y logout, y middleware que valide la cookie de sesión.
-- [ ] Eliminar `POST /users` y el campo `userId` de `POST /companies` cuando el frontend use `POST /companies/register`.
+- [x] Eliminar `POST /users`, `POST /companies` y `GET /companies/:id`.
+- [ ] Pasar el formulario de registro del frontend a `POST /companies/register` (hoy llama a `POST /users`).

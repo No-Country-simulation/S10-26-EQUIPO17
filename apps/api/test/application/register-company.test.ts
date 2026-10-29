@@ -53,7 +53,14 @@ describe("RegisterCompany", () => {
       registerCompany.execute({ ...data, country: "Atlantis" }),
       ValidacionError,
     );
-    await assert.rejects(registerCompany.execute({ ...data, companyName: " " }), ValidacionError);
+    for (const field of ["firstName", "lastName", "jobPosition", "companyName"] as const) {
+      await assert.rejects(registerCompany.execute({ ...data, [field]: "  " }), ValidacionError);
+    }
+    await assert.rejects(
+      registerCompany.execute({ ...data, businessSector: "Magic" }),
+      ValidacionError,
+    );
+    await assert.rejects(registerCompany.execute({ ...data, interests: [] }), ValidacionError);
 
     assert.equal(await users.findByEmail(anaEmail), null);
   });

@@ -37,117 +37,11 @@ describe("API HTTP", () => {
     assert.deepEqual(await res.json(), { status: "ok" });
   });
 
-  it("registra un usuario sin exponer la clave y crea una company asociada", async () => {
-    const resUser = await post(
-      "/users",
-      JSON.stringify({ email: "ana@ejemplo.com", password: "clave-segura" }),
-    );
-    assert.equal(resUser.status, 201);
-    const user = (await resUser.json()) as Record<string, unknown>;
-    assert.deepEqual(Object.keys(user).sort(), ["email", "id"]);
-
-    const resCompany = await post(
-      "/companies",
-      JSON.stringify({
-        firstName: "Ana",
-        lastName: "García",
-        jobPosition: "CTO",
-        companyName: "Acme",
-        country: "Argentina",
-        businessSector: "Technology",
-        interests: ["Evaluate talent in real work experience"],
-        userId: user.id,
-      }),
-    );
-    assert.equal(resCompany.status, 201);
-    const company = (await resCompany.json()) as { id: string };
-
-    const resGet = await fetch(`${base}/companies/${company.id}`);
-    assert.equal(resGet.status, 200);
-    assert.deepEqual(await resGet.json(), {
-      id: company.id,
-      firstName: "Ana",
-      lastName: "García",
-      jobPosition: "CTO",
-      companyName: "Acme",
-      country: "Argentina",
-      businessSector: "Technology",
-      interests: ["Evaluate talent in real work experience"],
-      user: { id: user.id, email: "ana@ejemplo.com" },
-    });
-  });
-
-  it("traduce los errores de dominio a códigos HTTP", async () => {
-    const duplicado = JSON.stringify({ email: "dup@ejemplo.com", password: "clave-segura" });
-    assert.equal((await post("/users", duplicado)).status, 201);
-    assert.equal((await post("/users", duplicado)).status, 409);
-
-    assert.equal((await post("/companies", JSON.stringify({ companyName: "Acme" }))).status, 400);
-    assert.equal((await fetch(`${base}/companies/no-existe`)).status, 404);
-  });
-
-  it("responde 400 ante un country, businessSector o interest inválido", async () => {
-    const valid = {
-      firstName: "Ana",
-      lastName: "García",
-      jobPosition: "CTO",
-      companyName: "Acme",
-      country: "Argentina",
-      businessSector: "Technology",
-      interests: ["Evaluate talent in real work experience"],
-    };
-    const cases = [
-      { override: { country: "Narnia" }, error: "Invalid country: Narnia" },
-      { override: { businessSector: "Magic" }, error: "Invalid business sector: Magic" },
-      { override: { interests: ["Nope"] }, error: "Invalid interests: Nope" },
-      { override: { interests: [] }, error: "At least one interest is required" },
-    ];
-
-    for (const { override, error } of cases) {
-      const res = await post("/companies", JSON.stringify({ ...valid, ...override }));
-      assert.equal(res.status, 400, JSON.stringify(override));
-      assert.deepEqual(await res.json(), { error });
-    }
-  });
-
-  it("responde 400 si interests no es una lista de textos", async () => {
-    const res = await post(
-      "/companies",
-      JSON.stringify({
-        firstName: "Ana",
-        lastName: "García",
-        jobPosition: "CTO",
-        companyName: "Acme",
-        country: "Argentina",
-        businessSector: "Technology",
-        interests: "Evaluate talent in real work experience",
-      }),
-    );
-    assert.equal(res.status, 400);
-  });
-
-  it("responde 400 ante JSON mal formado", async () => {
-    const res = await post("/companies", "{ no es json");
-    assert.equal(res.status, 400);
-  });
-
-  it("responde 404 al crear una company con un userId inexistente", async () => {
-    const res = await post(
-      "/companies",
-      JSON.stringify({
-        firstName: "Ana",
-        lastName: "García",
-        jobPosition: "CTO",
-        companyName: "Acme",
-        country: "Argentina",
-        businessSector: "Technology",
-        interests: ["Evaluate talent in real work experience"],
-        userId: "no-existe",
-      }),
-    );
-
-    assert.equal(res.status, 404);
-    assert.deepEqual(await res.json(), { error: "User no-existe does not exist" });
+  it("ya no expone POST /users, POST /companies ni GET /companies/:id", async () => {
+    const company = JSON.stringify({ companyName: "Acme" });
+    assert.equal((await post("/users", company)).status, 404);
+    assert.equal((await post("/companies", company)).status, 404);
+    assert.equal((await fetch(`${base}/companies/cualquier-id`)).status, 404);
   });
 
   describe("POST /companies/register", () => {
@@ -168,8 +62,7 @@ describe("API HTTP", () => {
       assert.equal(res.status, 201);
       const company = (await res.json()) as { id: string; user: { id: string } };
 
-      const resGet = await fetch(`${base}/companies/${company.id}`);
-      assert.deepEqual(await resGet.json(), {
+      assert.deepEqual(company, {
         id: company.id,
         firstName: "Ana",
         lastName: "García",
@@ -189,6 +82,32 @@ describe("API HTTP", () => {
       assert.deepEqual(await res.json(), { error: "Invalid country: Narnia" });
 
       assert.equal((await post("/companies/register", JSON.stringify(datos))).status, 201);
+    });
+
+    it("responde 400 ante un country, businessSector o interest inválido", async () => {
+      const cases = [
+        { override: { country: "Narnia" }, error: "Invalid country: Narnia" },
+        { override: { businessSector: "Magic" }, error: "Invalid business sector: Magic" },
+        { override: { interests: ["Nope"] }, error: "Invalid interests: Nope" },
+        { override: { interests: [] }, error: "At least one interest is required" },
+      ];
+
+      for (const { override, error } of cases) {
+        const res = await post("/companies/register", JSON.stringify({ ...registro, ...override }));
+        assert.equal(res.status, 400, JSON.stringify(override));
+        assert.deepEqual(await res.json(), { error });
+      }
+    });
+
+    it("responde 400 si interests no es una lista de textos o faltan campos", async () => {
+      const sinLista = { ...registro, interests: "Evaluate talent in real work experience" };
+      assert.equal((await post("/companies/register", JSON.stringify(sinLista))).status, 400);
+      const soloNombre = JSON.stringify({ companyName: "Acme" });
+      assert.equal((await post("/companies/register", soloNombre)).status, 400);
+    });
+
+    it("responde 400 ante JSON mal formado", async () => {
+      assert.equal((await post("/companies/register", "{ no es json")).status, 400);
     });
 
     it("responde 409 si el email ya está registrado", async () => {
