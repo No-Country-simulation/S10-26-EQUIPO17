@@ -148,4 +148,57 @@ describe("API HTTP", () => {
     assert.equal(res.status, 404);
     assert.deepEqual(await res.json(), { error: "User no-existe does not exist" });
   });
+
+  describe("POST /companies/register", () => {
+    const registro = {
+      email: "registro@ejemplo.com",
+      password: "clave-segura",
+      firstName: "Ana",
+      lastName: "García",
+      jobPosition: "CTO",
+      companyName: "Acme",
+      country: "Argentina",
+      businessSector: "Technology",
+      interests: ["Evaluate talent in real work experience"],
+    };
+
+    it("crea el usuario y la company en una sola request", async () => {
+      const res = await post("/companies/register", JSON.stringify(registro));
+      assert.equal(res.status, 201);
+      const company = (await res.json()) as { id: string; user: { id: string } };
+
+      const resGet = await fetch(`${base}/companies/${company.id}`);
+      assert.deepEqual(await resGet.json(), {
+        id: company.id,
+        firstName: "Ana",
+        lastName: "García",
+        jobPosition: "CTO",
+        companyName: "Acme",
+        country: "Argentina",
+        businessSector: "Technology",
+        interests: ["Evaluate talent in real work experience"],
+        user: { id: company.user.id, email: "registro@ejemplo.com" },
+      });
+    });
+
+    it("responde 400 ante datos de company inválidos sin dejar el email tomado", async () => {
+      const datos = { ...registro, email: "invalido@ejemplo.com" };
+      const res = await post("/companies/register", JSON.stringify({ ...datos, country: "Narnia" }));
+      assert.equal(res.status, 400);
+      assert.deepEqual(await res.json(), { error: "Invalid country: Narnia" });
+
+      assert.equal((await post("/companies/register", JSON.stringify(datos))).status, 201);
+    });
+
+    it("responde 409 si el email ya está registrado", async () => {
+      const datos = { ...registro, email: "repetido@ejemplo.com" };
+      assert.equal((await post("/companies/register", JSON.stringify(datos))).status, 201);
+      assert.equal((await post("/companies/register", JSON.stringify(datos))).status, 409);
+    });
+
+    it("responde 400 si falta el email o la contraseña", async () => {
+      const { password: _password, ...sinClave } = registro;
+      assert.equal((await post("/companies/register", JSON.stringify(sinClave))).status, 400);
+    });
+  });
 });
