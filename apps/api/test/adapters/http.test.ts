@@ -9,12 +9,13 @@ import { crearApp } from "../../src/infrastructure/http/app.js";
 describe("API HTTP", () => {
   let server: Server;
   let base: string;
+  const cookies = { secure: true, sameSite: "lax" } as const;
 
   before(async () => {
     const casos = crearCasosDeUso(
-      crearDependencias({ puerto: 0, persistencia: "memoria", supabase: null }),
+      crearDependencias({ puerto: 0, persistencia: "memoria", supabase: null, cookies }),
     );
-    server = crearApp(casos).listen(0);
+    server = crearApp(casos, cookies).listen(0);
     await new Promise((resolve) => server.once("listening", resolve));
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
@@ -199,6 +200,63 @@ describe("API HTTP", () => {
     it("responde 400 si falta el email o la contraseña", async () => {
       const { password: _password, ...sinClave } = registro;
       assert.equal((await post("/companies/register", JSON.stringify(sinClave))).status, 400);
+    });
+  });
+
+  describe("POST /auth/login", () => {
+    const credenciales = { email: "login@ejemplo.com", password: "clave-segura" };
+    let userId: string;
+
+    before(async () => {
+      const res = await post(
+        "/companies/register",
+        JSON.stringify({
+          ...credenciales,
+          firstName: "Ana",
+          lastName: "García",
+          jobPosition: "CTO",
+          companyName: "Acme",
+          country: "Argentina",
+          businessSector: "Technology",
+          interests: ["Evaluate talent in real work experience"],
+        }),
+      );
+      userId = ((await res.json()) as { user: { id: string } }).user.id;
+    });
+
+    it("devuelve el usuario con su rol y la sesión en cookies HttpOnly", async () => {
+      const res = await post("/auth/login", JSON.stringify(credenciales));
+
+      assert.equal(res.status, 200);
+      assert.deepEqual(await res.json(), {
+        user: { id: userId, email: "login@ejemplo.com", role: "company" },
+      });
+
+      const [access = "", refresh = ""] = res.headers.getSetCookie();
+      assert.match(access, /^access_token=[^;]+; Max-Age=3600; Path=\/; /);
+      assert.match(refresh, /^refresh_token=[^;]+; Max-Age=\d+; Path=\/auth; /);
+      for (const cookie of [access, refresh]) {
+        assert.match(cookie, /; HttpOnly/);
+        assert.match(cookie, /; Secure/);
+        assert.match(cookie, /; SameSite=Lax/);
+      }
+    });
+
+    it("responde 401 sin cookies ante una contraseña incorrecta o un email desconocido", async () => {
+      for (const body of [
+        { ...credenciales, password: "otra-clave" },
+        { ...credenciales, email: "nadie@ejemplo.com" },
+      ]) {
+        const res = await post("/auth/login", JSON.stringify(body));
+        assert.equal(res.status, 401);
+        assert.deepEqual(await res.json(), { error: "Invalid email or password" });
+        assert.deepEqual(res.headers.getSetCookie(), []);
+      }
+    });
+
+    it("responde 400 si falta la contraseña", async () => {
+      const res = await post("/auth/login", JSON.stringify({ email: credenciales.email }));
+      assert.equal(res.status, 400);
     });
   });
 });

@@ -2,6 +2,7 @@
 // y las conecta con los puertos que piden los casos de uso.
 import type { CreateCompany } from "../application/ports/in/create-company.js";
 import type { GetCompany } from "../application/ports/in/get-company.js";
+import type { LogIn } from "../application/ports/in/log-in.js";
 import type { RegisterCompany } from "../application/ports/in/register-company.js";
 import type { RegisterUser } from "../application/ports/in/register-user.js";
 import type { GeneradorDeIds } from "../application/ports/out/generador-de-ids.js";
@@ -10,6 +11,7 @@ import type { CompanyRepository } from "../application/ports/out/company-reposit
 import type { UserRepository } from "../application/ports/out/user-repository.js";
 import { CreateCompanyUseCase } from "../application/use-cases/create-company.js";
 import { GetCompanyUseCase } from "../application/use-cases/get-company.js";
+import { LogInUseCase } from "../application/use-cases/log-in.js";
 import { RegisterCompanyUseCase } from "../application/use-cases/register-company.js";
 import { RegisterUserUseCase } from "../application/use-cases/register-user.js";
 import { InMemoryAuthProvider } from "../adapters/out/auth/in-memory-auth-provider.js";
@@ -36,6 +38,7 @@ export interface CasosDeUso {
   createCompany: CreateCompany;
   getCompany: GetCompany;
   registerCompany: RegisterCompany;
+  logIn: LogIn;
 }
 
 export function crearDependencias(config: Config): Dependencias {
@@ -51,10 +54,11 @@ export function crearDependencias(config: Config): Dependencias {
     };
   }
 
-  const supabase = crearClienteSupabase(config.supabase.url, config.supabase.claveSecreta);
+  const { url, claveSecreta } = config.supabase;
+  const supabase = crearClienteSupabase(url, claveSecreta);
   return {
     ids,
-    auth: new SupabaseAuthProvider(supabase),
+    auth: new SupabaseAuthProvider(supabase, () => crearClienteSupabase(url, claveSecreta)),
     users: new SupabaseUserRepository(supabase),
     companies: new SupabaseCompanyRepository(supabase),
   };
@@ -66,5 +70,6 @@ export function crearCasosDeUso({ users, companies, auth, ids }: Dependencias): 
     createCompany: new CreateCompanyUseCase(companies, users, ids),
     getCompany: new GetCompanyUseCase(companies),
     registerCompany: new RegisterCompanyUseCase(auth, companies, ids),
+    logIn: new LogInUseCase(auth),
   };
 }

@@ -1,13 +1,47 @@
 import { isAuthApiError, type SupabaseClient } from "@supabase/supabase-js";
-import type { AuthProvider } from "../../../application/ports/out/auth-provider.js";
-import { ConflictoError } from "../../../domain/errors.js";
+import type {
+  AuthProvider,
+  AuthSession,
+} from "../../../application/ports/out/auth-provider.js";
+import { ConflictoError, CredencialesInvalidasError } from "../../../domain/errors.js";
 import type { Email } from "../../../domain/value-objects/email.js";
-import type { UserRole } from "../../../domain/value-objects/user-role.js";
+import { isUserRole, type UserRole } from "../../../domain/value-objects/user-role.js";
 
 // The on_auth_user_created trigger (see supabase/migrations) copies the new
 // auth.users row into public.users, so this adapter only talks to Auth.
 export class SupabaseAuthProvider implements AuthProvider {
-  constructor(private readonly supabase: SupabaseClient) {}
+  /**
+   * @param supabase shared admin client, used for user management.
+   * @param createSessionClient returns a new client for each login: signing in stores the
+   *   session in the client and later requests run as that user, so it must never be shared.
+   */
+  constructor(
+    private readonly supabase: SupabaseClient,
+    private readonly createSessionClient: () => SupabaseClient,
+  ) {}
+
+  async logIn(email: Email, password: string): Promise<AuthSession> {
+    const { data, error } = await this.createSessionClient().auth.signInWithPassword({
+      email: email.value,
+      password,
+    });
+    if (isAuthApiError(error) && error.code === "invalid_credentials") {
+      throw new CredencialesInvalidasError();
+    }
+    if (error || !data.user || !data.session) {
+      throw new Error(`Supabase Auth: ${error?.message ?? "no session returned"}`, {
+        cause: error,
+      });
+    }
+    const role = data.user.app_metadata.role;
+    return {
+      userId: data.user.id,
+      role: isUserRole(role) ? role : null,
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+      expiresIn: data.session.expires_in,
+    };
+  }
 
   async register(email: Email, password: string, role?: UserRole): Promise<string> {
     const { data, error } = await this.supabase.auth.admin.createUser({
