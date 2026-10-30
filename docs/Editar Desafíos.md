@@ -1,9 +1,12 @@
 # **<u>Editar Desafíos:</u>** 
 
-Actor principal :Empresa 
-Actor secundario :Organizador 
-Precondiciones: Usuario autenticado; El  desafío existe y se puede editar 
-Disparador: La compañía requiere que se modifique un desafío 
+Actor principal :Empresa. 
+
+Actor secundario :Organizador. 
+
+Precondiciones: Usuario autenticado; El  desafío existe y se puede editar. 
+
+Disparador: La compañía requiere que se modifique un desafío. 
 
 # **Flujo principal** 
 
@@ -48,13 +51,13 @@ Disparador: La compañía requiere que se modifique un desafío
 
 
 
-Actor principal :Empresa 
+Actor principal :Empresa. 
 
-Actor secundario : Ninguno
+Actor secundario : Ninguno.
 
-Precondiciones : Usuario autenticado. El/los desafíos existen y la empresa tiene acceso a la sección desafíos 
+Precondiciones : Usuario autenticado. El/los desafíos existen y la empresa tiene acceso a la sección desafíos. 
 
-Disparador : La compañía quiere revisar sus desafíos 
+Disparador : La compañía quiere revisar sus desafíos. 
 
 # **Flujo principal** 
 
