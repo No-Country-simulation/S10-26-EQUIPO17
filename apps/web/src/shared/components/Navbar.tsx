@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 
 const links = [
-  { label: "Para Instituciones Educativas", href: "#instituciones", strong: true },
+  { label: "Para centros de estudio", href: "#instituciones", strong: true },
   { label: "Para Empresas", href: "#empresas", strong: true },
-  { label: "Para Talento", href: "#talento", strong: true },
-  { label: "Pilares", href: "#simulacion" },
-  { label: "Public Dashboard", href: "#public-dashboard" },
+  { label: "Para profesionales emergentes", href: "#talento", strong: true },
+  { label: "Cómo funciona", href: "#simulacion" },
+  { label: "Métricas públicas en vivo", href: "#public-dashboard" },
 ];
 
 export function Navbar() {
@@ -19,7 +19,7 @@ export function Navbar() {
           <div className="flex flex-col leading-tight">
             <span className="text-xl font-bold text-white">No Country</span>
             <span className="text-gradient text-[11px] font-semibold uppercase tracking-widest">
-              Simulación Laboral
+              Experiencia de trabajo real
             </span>
           </div>
         </Link>
@@ -39,13 +39,13 @@ export function Navbar() {
 
         <div className="flex items-center gap-3">
           <Link to="/cargar-desafio" className="btn btn-sm hidden border-neutral bg-base-300 sm:inline-flex">
-            Acceder
+            Iniciar sesión
           </Link>
           <Link
             to="/cargar-desafio"
             className="btn btn-sm bg-brand-gradient border-0 text-white shadow-[0_0_20px_rgba(255,0,148,0.35)]"
           >
-            Comenzar
+            Subir proyecto
           </Link>
         </div>
       </div>

@@ -25,7 +25,7 @@ function MockupHeader({ icon, iconClass, title, tag, tagClass }: {
 
 const challenges = [
   { name: "Prototipo FinTech B2B", status: "Sprint 4 / 5", statusClass: "text-secondary", progress: 80, meta: "1 PM · 2 Front · 2 Back · 1 UX · 1 QA", action: "Demo lista" },
-  { name: "Plataforma Logística AI", status: "Sprint Finalizado", statusClass: "text-primary", progress: 100, meta: "Repositorio entregado + Docs", action: "Descargar MVP" },
+  { name: "Plataforma Logística AI", status: "Sprint Finalizado", statusClass: "text-primary", progress: 100, meta: "Repositorio entregado + Docs", action: "Descargar prototipo funcional" },
 ];
 
 function CompanyMockup() {
@@ -63,7 +63,7 @@ function InstitutionMockup() {
       <MockupHeader
         icon="analytics"
         iconClass="text-indigo-300"
-        title="Cohort Employment Index"
+        title="Índice de inserción por generación"
         tag="Bootcamp Partner"
         tagClass="border-accent/30 bg-accent/10 text-indigo-300"
       />
@@ -79,7 +79,7 @@ function InstitutionMockup() {
           <span className="block text-xs text-neutral-content">Alumnos evaluados en equipos reales</span>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="text-2xl font-bold tabular-nums text-indigo-300">380 estudiantes</span>
-            <span className="text-xs text-neutral-content">Cohorte 2024-Q4</span>
+            <span className="text-xs text-neutral-content">Generación 2024-Q4</span>
           </div>
         </div>
       </div>
@@ -96,7 +96,7 @@ function TalentMockup() {
         </div>
         <div>
           <span className="block text-base font-bold text-white">Javier Silva</span>
-          <span className="text-xs text-neutral-content">Frontend Developer · Cohort C18 Graduate</span>
+          <span className="text-xs text-neutral-content">Desarrollador frontend · Egresado de generación C18</span>
         </div>
       </div>
       <div className="mb-4 grid grid-cols-2 gap-3">

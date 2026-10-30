@@ -12,10 +12,10 @@ export function LiveDashboard() {
         </div>
         <div className="flex gap-3">
           <span className="badge badge-outline border-neutral bg-base-100 uppercase text-secondary">
-            <span className="status status-secondary animate-ping" /> Cohort C18 · 24 Equipos
+            <span className="status status-secondary animate-ping" /> Generación C18 · 24 equipos
           </span>
           <span className="badge hidden border-neutral bg-base-200 sm:inline-flex">
-            Semana 3 de 5 · Entrega de MVP
+            Semana 3 de 5 · Entrega del primer prototipo funcional
           </span>
         </div>
       </div>
@@ -47,7 +47,7 @@ export function LiveDashboard() {
               <span className="material-symbols-outlined text-secondary">radar</span>
               Radar de Dinámicas de Trabajo en Vivo
             </h3>
-            <span className="badge badge-secondary badge-soft text-[11px] uppercase">Live Sprints</span>
+            <span className="badge badge-secondary badge-soft text-[11px] uppercase">Proyectos en desarrollo</span>
           </header>
           <ul className="space-y-2.5">
             {teamActivity.map((t) => (

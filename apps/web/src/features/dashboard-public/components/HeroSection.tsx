@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { heroTags } from "../data/landingData";
 import { LiveDashboard } from "./LiveDashboard";
 
@@ -16,17 +17,17 @@ export function HeroSection() {
 
         <div className="mb-12 max-w-4xl">
           <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-            La plataforma de <span className="text-gradient">Simulación Laboral</span> que conecta talento,
-            instituciones y empresas.
+            La plataforma de <span className="text-gradient">experiencia de trabajo real</span> que conecta
+            profesionales emergentes, centros de estudio y empresas.
           </h1>
           <p className="max-w-3xl text-lg leading-relaxed text-neutral-content lg:text-xl">
-            Transformamos la formación teórica en evidencia de trabajo real mediante equipos remotos que colaboran,
-            ejecutan y entregan proyectos concretos.
+            Transformamos los estudios teóricos en un portafolio comprobable mediante equipos que trabajan a distancia,
+            colaboran y crean proyectos reales.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <a href="#simulacion" className="btn btn-lg bg-brand-gradient border-0 text-white shadow-[0_0_25px_rgba(255,0,148,0.4)]">
-              <span className="material-symbols-outlined">rocket_launch</span> Explorar Simulación Laboral
-            </a>
+            <Link to="/cargar-desafio" className="btn btn-lg bg-brand-gradient border-0 text-white shadow-[0_0_25px_rgba(255,0,148,0.4)]">
+              <span className="material-symbols-outlined">rocket_launch</span> Validar mi proyecto o idea
+            </Link>
             <a href="#public-dashboard" className="btn btn-lg border-neutral bg-base-300 hover:border-secondary">
               <span className="material-symbols-outlined text-secondary">sensors</span> Ver Public Dashboard en Vivo
             </a>

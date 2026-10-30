@@ -1,7 +1,7 @@
 export const metrics = [
-  { label: "Equipos Colaborando", value: "142", hint: "Frontend, Backend, UX/UI, QA, PM", icon: "groups", delta: "+18% cohort", tone: "text-secondary", gradient: false },
+  { label: "Equipos Colaborando", value: "142", hint: "Frontend, Backend, UX/UI, QA, PM", icon: "groups", delta: "+18% por generación", tone: "text-secondary", gradient: false },
   { label: "Horas de Simulación", value: "18,450 hrs", hint: "Ejecución continua en squads ágiles", icon: "timer", delta: "", tone: "text-primary", gradient: true },
-  { label: "Signals & Insights", value: "98.4%", hint: "Tasa de entrega de prototipos funcionales", icon: "verified", delta: "", tone: "text-secondary", gradient: false },
+  { label: "Métricas y resultados", value: "98.4%", hint: "Tasa de entrega de prototipos funcionales", icon: "verified", delta: "", tone: "text-secondary", gradient: false },
 ];
 
 export const teamActivity = [
@@ -18,9 +18,9 @@ export const skills = [
 ];
 
 export const heroTags = [
-  { label: "100% Remoto", badge: "badge-secondary" },
-  { label: "Trabajo Colaborativo", badge: "badge-accent" },
-  { label: "Evaluación por Insights", badge: "badge-warning" },
+  { label: "Trabajo a distancia", badge: "badge-secondary" },
+  { label: "Trabajo en equipo", badge: "badge-accent" },
+  { label: "Evaluación basada en resultados reales", badge: "badge-warning" },
 ];
 
 export const simulationPillars = [
@@ -47,7 +47,7 @@ export const simulationPillars = [
   {
     icon: "workspace_premium",
     tag: "Verified Portfolio",
-    title: "Generación de Insights",
+    title: "Resultados observables",
     description: "Convertimos la actividad observada en evidencia medible de empleabilidad y desempeño para empresas e instituciones.",
     highlight: "Badge de certificación respaldado por código",
     text: "text-secondary",
@@ -78,7 +78,7 @@ export const roles: Role[] = [
     badgeLabel: "Para Empresas y Emprendedores",
     badgeClass: "border-secondary/30 bg-secondary/10 text-secondary",
     iconClass: "text-secondary",
-    title: "Valida tus proyectos con equipos de talento real en 5 semanas.",
+    title: "Valida tus proyectos con equipos de profesionales emergentes en 5 semanas.",
     description: "Conectamos a tu empresa con equipos multidisciplinarios para prototipar, desarrollar y probar tu software sin asumir costos ni tiempos de contratación.",
     features: [
       { icon: "bolt", title: "Prototipado en 5 semanas", text: "Pon a un equipo multidisciplinario a resolver tus desafíos y entregar prototipos funcionales." },
@@ -95,7 +95,7 @@ export const roles: Role[] = [
   {
     id: "instituciones",
     badgeIcon: "school",
-    badgeLabel: "Para Instituciones Educativas",
+    badgeLabel: "Para centros de estudio",
     badgeClass: "border-accent/30 bg-accent/10 text-indigo-300",
     iconClass: "text-indigo-300",
     title: "Incorpora práctica profesional y métricas de empleabilidad reales a tus programas.",
@@ -116,7 +116,7 @@ export const roles: Role[] = [
   {
     id: "talento",
     badgeIcon: "badge",
-    badgeLabel: "Para Talento Tech",
+    badgeLabel: "Para profesionales emergentes",
     badgeClass: "border-secondary/30 bg-secondary/10 text-secondary",
     iconClass: "text-secondary",
     title: "Suma experiencia real, crea portafolio verificable y acelera tu carrera de forma 100% gratuita.",
@@ -124,11 +124,11 @@ export const roles: Role[] = [
     features: [
       { icon: "terminal", title: "Proyectos Reales", text: "Colabora con perfiles de otros países y disciplinas (Frontend, Backend, UX/UI, PM, QA)." },
       { icon: "history_edu", title: "Trayectoria Observable", text: "Construye un historial de trabajo con evidencia real de tus habilidades blandas y técnicas." },
-      { icon: "public", title: "Networking Internacional", text: "Conéctate con mentores, pares y empresas que buscan talento validado." },
+      { icon: "public", title: "Conexiones internacionales", text: "Conéctate con mentores, pares y empresas que buscan profesionales con experiencia comprobable." },
     ],
     cta: {
       icon: "how_to_reg",
-      label: "Postular a la Próxima Cohorte (Gratis)",
+      label: "Postular a la próxima generación (Gratis)",
       href: "#",
       className: "bg-brand-gradient border-0 text-white shadow-[0_0_20px_rgba(255,0,148,0.4)]",
     },

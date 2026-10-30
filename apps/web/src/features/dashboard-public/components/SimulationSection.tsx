@@ -8,11 +8,10 @@ export function SimulationSection() {
           <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-secondary">
             Infraestructura de Aprendizaje Activo
           </span>
-          <h2 className="mb-4 text-3xl font-extrabold text-white lg:text-4xl">¿Qué es la Simulación Laboral?</h2>
+          <h2 className="mb-4 text-3xl font-extrabold text-white lg:text-4xl">¿Qué es una experiencia de trabajo real?</h2>
           <div className="rounded-2xl border border-neutral bg-base-200 p-5 text-base leading-relaxed text-neutral-content lg:text-lg">
-            Una Simulación Laboral es un entorno controlado que reproduce la dinámica del trabajo real. A diferencia
-            de un curso o un proyecto aislado, integra equipos multidisciplinarios, ejecución real y observación
-            activa dentro de una misma infraestructura.
+            Es una experiencia que reproduce la dinámica del trabajo real. A diferencia de un curso o un proyecto
+            aislado, reúne equipos con distintas especialidades que colaboran, crean y comparten sus avances.
           </div>
         </div>
 

@@ -6,7 +6,7 @@ export function CtaBanner() {
         <div className="card flex flex-col items-center border border-neutral bg-base-200 p-10 text-center shadow-2xl lg:p-16">
           <span className="badge badge-outline mb-6 gap-2 border-secondary/30 bg-secondary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-secondary">
             <span className="status status-secondary animate-pulse" />
-            Próxima Cohorte Inicia en 12 Días
+            Próxima generación inicia en 12 días
           </span>
           <h2 className="mb-4 max-w-4xl text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
             Únete a la evolución del trabajo remoto y la formación basada en evidencia.
@@ -22,7 +22,7 @@ export function CtaBanner() {
               className="btn btn-lg gap-2 border-0 bg-brand-gradient text-base font-bold text-white shadow-[0_0_30px_rgba(255,0,148,0.4)] transition-all hover:opacity-90 active:scale-[0.98]"
             >
               <span className="material-symbols-outlined text-[22px]">rocket_launch</span>
-              Sumarme como Talento (Gratis)
+              Participar como profesional emergente (Gratis)
             </a>
             <a
               href="#empresas"
@@ -43,7 +43,7 @@ export function CtaBanner() {
           <div className="flex w-full flex-col items-center justify-center gap-6 border-t border-neutral pt-6 text-neutral-content md:flex-row lg:gap-12">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[20px] text-secondary">check_circle</span>
-              <span className="text-xs font-medium lg:text-sm">100% Gratuito para Talento Seleccionado</span>
+              <span className="text-xs font-medium lg:text-sm">Sin costo para profesionales seleccionados</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[20px] text-primary">check_circle</span>
