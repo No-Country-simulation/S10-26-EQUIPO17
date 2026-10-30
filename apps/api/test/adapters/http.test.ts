@@ -129,7 +129,7 @@ describe("API HTTP", () => {
       jobPosition: "CTO",
       companyName: "Acme",
       country: "Argentina",
-      businessSector: "Technology",
+      businessSector: "IT",
       organizationType: "Educational Institute",
     };
 
@@ -145,7 +145,7 @@ describe("API HTTP", () => {
         jobPosition: "CTO",
         companyName: "Acme",
         country: "Argentina",
-        businessSector: "Technology",
+        businessSector: "IT",
         organizationType: "Educational Institute",
         user: { id: company.user.id, email: "registro@ejemplo.com" },
       });
@@ -214,7 +214,7 @@ describe("API HTTP", () => {
           jobPosition: "CTO",
           companyName: "Acme",
           country: "Argentina",
-          businessSector: "Technology",
+          businessSector: "IT",
           organizationType: "Educational Institute",
         }),
       );

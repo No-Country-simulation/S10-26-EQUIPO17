@@ -16,7 +16,7 @@ request -X POST "$API_URL/companies/register" \
   "jobPosition": "${JOB_POSITION:-CTO}",
   "companyName": "${COMPANY_NAME:-Acme}",
   "country": "${COUNTRY:-Argentina}",
-  "businessSector": "${BUSINESS_SECTOR:-Technology}",
+  "businessSector": "${BUSINESS_SECTOR:-IT}",
   "organizationType": "${ORGANIZATION_TYPE:-Company}"
 }
 JSON

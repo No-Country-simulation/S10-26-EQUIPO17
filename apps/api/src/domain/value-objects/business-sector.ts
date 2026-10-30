@@ -1,13 +1,10 @@
 import { ValidacionError } from "../errors.js";
 
-// TODO: Cambiar los sectores de ejemplo por los sectores reales que se van a utilizar en la aplicación
-// Estos son sectores de ejemplo
 enum EnumBusinessSector {
-  sector1 = "Technology",
-  sector2 = "Healthcare",
-  sector3 = "Finance",
-  sector4 = "Education",
-  sector5 = "Manufacturing",
+  product = "Product",
+  it = "IT",
+  marketing = "Marketing",
+  softwareDevelopment = "Software Development",
 }
 
 class BusinessSector {

@@ -17,7 +17,7 @@ const data = {
   jobPosition: "CTO",
   companyName: "Acme",
   country: "Argentina",
-  businessSector: "Technology",
+  businessSector: "IT",
   organizationType: "StartUp",
 };
 

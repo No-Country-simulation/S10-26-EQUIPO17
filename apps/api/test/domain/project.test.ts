@@ -11,7 +11,7 @@ const props = (): ProjectProps => ({
   title: " Marketplace ",
   description: " A platform to connect buyers and sellers ",
   vertical: new Vertical("E-commerce"),
-  businessSector: new BusinessSector("Technology"),
+  businessSectors: [new BusinessSector("Product"), new BusinessSector("IT")],
   projectStage: new ProjectStage("MVP"),
 });
 
@@ -23,7 +23,10 @@ describe("Project", () => {
     assert.equal(project.title, "Marketplace");
     assert.equal(project.description, "A platform to connect buyers and sellers");
     assert.equal(project.vertical.getVertical(), "E-commerce");
-    assert.equal(project.businessSector.getSector(), "Technology");
+    assert.deepEqual(
+      project.businessSectors.map((sector) => sector.getSector()),
+      ["Product", "IT"],
+    );
     assert.equal(project.projectStage.getStage(), "MVP");
   });
 
@@ -31,6 +34,23 @@ describe("Project", () => {
     for (const field of ["id", "title", "description"] as const) {
       assert.throws(() => Project.create({ ...props(), [field]: "  " }), ValidacionError);
     }
+  });
+
+  it("rejects a project without business sectors", () => {
+    assert.throws(() => Project.create({ ...props(), businessSectors: [] }), {
+      name: ValidacionError.name,
+      message: "At least one business sector is required",
+    });
+  });
+
+  it("accepts every business sector and rejects any other", () => {
+    for (const sector of ["Product", "IT", "Marketing", "Software Development"]) {
+      assert.equal(new BusinessSector(sector).getSector(), sector);
+    }
+    assert.throws(() => new BusinessSector("Technology"), {
+      name: ValidacionError.name,
+      message: "Invalid business sector: Technology",
+    });
   });
 
   it("rejects an invalid vertical", () => {
