@@ -27,3 +27,34 @@ describe("leerConfig cookies", () => {
     );
   });
 });
+
+describe("leerConfig CORS_ORIGINS", () => {
+  const base = { PERSISTENCIA: "memoria" };
+
+  it("allows no cross-origin requests by default", () => {
+    assert.deepEqual(leerConfig(base).corsOrigins, []);
+  });
+
+  it("reads a comma separated list of exact origins", () => {
+    assert.deepEqual(
+      leerConfig({ ...base, CORS_ORIGINS: " http://127.0.0.1:5173, https://web.ejemplo.com " })
+        .corsOrigins,
+      ["http://127.0.0.1:5173", "https://web.ejemplo.com"],
+    );
+  });
+
+  it("rejects anything that is not an exact origin", () => {
+    for (const valor of [
+      "*",
+      "null",
+      "web.ejemplo.com",
+      "https://web.ejemplo.com/",
+      "https://web.ejemplo.com/app",
+      "https://*.ejemplo.com",
+      "ftp://web.ejemplo.com",
+      "https://web.ejemplo.com,",
+    ]) {
+      assert.throws(() => leerConfig({ ...base, CORS_ORIGINS: valor }), /CORS_ORIGINS/, valor);
+    }
+  });
+});

@@ -64,6 +64,7 @@ Definidas en `.env` (raíz), a partir de `.env.example`:
 | `SUPABASE_SECRET_KEY`      | Clave secreta para la API, se obtiene con `pnpm supabase status`. Nunca va al frontend. |
 | `COOKIE_SAME_SITE`         | `SameSite` de las cookies de sesión: `lax` (por defecto), `strict` o `none`. `none` solo si la web y la API están en sitios distintos. |
 | `COOKIE_SECURE`            | `true` (por defecto) o `false`. Usar `false` solo en desarrollo sobre http. `none` requiere `true`. |
+| `CORS_ORIGINS`             | Orígenes exactos del frontend, separados por coma (p. ej. `https://web.com`). Sin `*`, sin path ni barra final. Vacío: ningún origen externo. |
 
 ### URLs de Supabase: contenedor vs. navegador
 
@@ -94,7 +95,8 @@ La app de React corre en el navegador, así que debe usar `127.0.0.1`, nunca `ho
 - [x] Tests unitarios de la API (`node:test`).
 - [ ] Tests e2e con Playwright.
 - [ ] CI en GitHub Actions (build y validación de migraciones).
-- [ ] CORS con credenciales en la API, necesario porque la web y la API van en dominios distintos.
+- [x] CORS con credenciales en la API, necesario porque la web y la API van en dominios distintos.
+- [ ] Protección CSRF explícita si se pasa a `COOKIE_SAME_SITE=none`.
 - [ ] Endpoints de refresh y logout, y middleware que valide la cookie de sesión.
 - [x] Eliminar `POST /users`, `POST /companies` y `GET /companies/:id`.
 - [ ] Pasar el formulario de registro del frontend a `POST /companies/register` (hoy llama a `POST /users`).

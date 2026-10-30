@@ -91,6 +91,21 @@ puede leer.
 raíz). Un email desconocido y una contraseña incorrecta devuelven el mismo `401`, así no se revela
 qué emails están registrados.
 
+### CORS
+
+La web y la API van en dominios distintos, así que el navegador solo deja que el frontend lea las
+respuestas si la API lo autoriza. Solo los orígenes de `CORS_ORIGINS` reciben
+`Access-Control-Allow-Origin` (su propio origen, nunca `*`) y `Access-Control-Allow-Credentials`.
+El frontend tiene que hacer los `fetch` con `credentials: "include"` para recibir y mandar las
+cookies.
+
+Cualquier origen autorizado puede leer respuestas hechas con la sesión del usuario. Por eso la
+lista se compara por igualdad exacta y al arrancar se rechazan `*`, `null`, comodines, paths y
+barras finales. CORS no frena CSRF: hoy lo cubre `SameSite=Lax`. Con `SameSite=None` hará falta
+una protección propia.
+
+### Login en Supabase
+
 El login en Supabase se hace con un cliente nuevo por request. Iniciar sesión guarda la sesión en
 el cliente, y las consultas siguientes se harían como ese usuario: por eso nunca se usa el cliente
 compartido con la clave secreta.

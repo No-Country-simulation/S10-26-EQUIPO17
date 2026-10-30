@@ -3,19 +3,25 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { after, before, describe, it } from "node:test";
 import { crearCasosDeUso, crearDependencias } from "../../src/infrastructure/container.js";
+import type { Config } from "../../src/infrastructure/config/env.js";
 import { crearApp } from "../../src/infrastructure/http/app.js";
 
 // Levanta la app real con los adaptadores en memoria y le pega por HTTP.
 describe("API HTTP", () => {
   let server: Server;
   let base: string;
-  const cookies = { secure: true, sameSite: "lax" } as const;
+  const web = "https://web.ejemplo.com";
+  const config = {
+    puerto: 0,
+    persistencia: "memoria",
+    supabase: null,
+    cookies: { secure: true, sameSite: "lax" },
+    corsOrigins: [web],
+  } as const satisfies Config;
 
   before(async () => {
-    const casos = crearCasosDeUso(
-      crearDependencias({ puerto: 0, persistencia: "memoria", supabase: null, cookies }),
-    );
-    server = crearApp(casos, cookies).listen(0);
+    const casos = crearCasosDeUso(crearDependencias({ ...config, corsOrigins: [web] }));
+    server = crearApp(casos, { ...config, corsOrigins: [web] }).listen(0);
     await new Promise((resolve) => server.once("listening", resolve));
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
@@ -30,6 +36,76 @@ describe("API HTTP", () => {
       headers: { "Content-Type": "application/json" },
       body,
     });
+
+  describe("CORS", () => {
+    const preflight = (origin: string) =>
+      fetch(`${base}/auth/login`, {
+        method: "OPTIONS",
+        headers: {
+          Origin: origin,
+          "Access-Control-Request-Method": "POST",
+          "Access-Control-Request-Headers": "content-type",
+        },
+      });
+
+    it("autoriza con credenciales al origen permitido", async () => {
+      const res = await fetch(`${base}/`, { headers: { Origin: web } });
+      assert.equal(res.headers.get("access-control-allow-origin"), web);
+      assert.equal(res.headers.get("access-control-allow-credentials"), "true");
+      assert.match(res.headers.get("vary") ?? "", /Origin/);
+    });
+
+    it("responde el preflight del origen permitido", async () => {
+      const res = await preflight(web);
+      assert.equal(res.status, 204);
+      assert.equal(res.headers.get("access-control-allow-origin"), web);
+      assert.equal(res.headers.get("access-control-allow-credentials"), "true");
+      assert.match(res.headers.get("access-control-allow-methods") ?? "", /POST/);
+      assert.match(res.headers.get("access-control-allow-headers") ?? "", /content-type/i);
+    });
+
+    it("no autoriza orígenes parecidos, null ni requests sin Origin", async () => {
+      for (const origin of [
+        "https://evil-web.ejemplo.com",
+        "https://web.ejemplo.com.evil.com",
+        "http://web.ejemplo.com",
+        "null",
+      ]) {
+        for (const res of [await fetch(`${base}/`, { headers: { Origin: origin } }), await preflight(origin)]) {
+          assert.equal(res.headers.get("access-control-allow-origin"), null, origin);
+          assert.equal(res.headers.get("access-control-allow-credentials"), null, origin);
+        }
+      }
+      assert.equal((await fetch(`${base}/`)).headers.get("access-control-allow-origin"), null);
+    });
+
+    it("marca toda respuesta con Vary: Origin para que ningún cache la reuse entre orígenes", async () => {
+      const casos: Record<string, string>[] = [
+        {},
+        { Origin: "https://evil-web.ejemplo.com" },
+        { Origin: web },
+      ];
+      for (const headers of casos) {
+        const res = await fetch(`${base}/`, { headers });
+        assert.match(res.headers.get("vary") ?? "", /Origin/, JSON.stringify(headers));
+      }
+    });
+
+    it("incluye los headers CORS en los errores para el origen permitido", async () => {
+      const malFormado = await fetch(`${base}/auth/login`, {
+        method: "POST",
+        headers: { Origin: web, "Content-Type": "application/json" },
+        body: "{ no es json",
+      });
+      const inexistente = await fetch(`${base}/no-existe`, { headers: { Origin: web } });
+      for (const res of [malFormado, inexistente]) {
+        assert.equal(res.headers.get("access-control-allow-origin"), web);
+        assert.equal(res.headers.get("access-control-allow-credentials"), "true");
+      }
+      assert.equal(malFormado.status, 400);
+      assert.equal(inexistente.status, 404);
+    });
+  });
 
   it("GET / responde el health check", async () => {
     const res = await fetch(`${base}/`);
