@@ -4,7 +4,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import { BusinessSector } from "../../../../domain/value-objects/business-sector.js";
 import { Company } from "../../../../domain/entities/company.js";
 import { Country } from "../../../../domain/value-objects/country.js";
-import { ExplorationInterest } from "../../../../domain/value-objects/exploration-interest.js";
+import { OrganizationType } from "../../../../domain/value-objects/organization-type.js";
 import { User } from "../../../../domain/entities/user.js";
 import { ConflictoError } from "../../../../domain/errors.js";
 import { Email } from "../../../../domain/value-objects/email.js";
@@ -22,7 +22,7 @@ export interface CompanyRow {
   company_name: string;
   country: string;
   business_sector: string;
-  interests: string[];
+  organization_type: string;
   user_id: string | null;
 }
 
@@ -31,7 +31,7 @@ export type CompanyWithUserRow = Omit<CompanyRow, "user_id"> & {
 };
 
 export const USER_COLUMNS = "id, email";
-export const COMPANY_WITH_USER_COLUMNS = `id, first_name, last_name, job_position, company_name, country, business_sector, interests, user:users(${USER_COLUMNS})`;
+export const COMPANY_WITH_USER_COLUMNS = `id, first_name, last_name, job_position, company_name, country, business_sector, organization_type, user:users(${USER_COLUMNS})`;
 
 export const rowToUser = (row: UserRow): User =>
   User.create({
@@ -47,7 +47,7 @@ export const companyToRow = (company: Company): CompanyRow => ({
   company_name: company.companyName,
   country: company.country.getCountry(),
   business_sector: company.businessSector.getSector(),
-  interests: company.interests.getInterest(),
+  organization_type: company.organizationType.getType(),
   user_id: company.user?.id ?? null,
 });
 
@@ -60,7 +60,7 @@ export const rowToCompany = (row: CompanyWithUserRow): Company =>
     companyName: row.company_name,
     country: new Country(row.country),
     businessSector: new BusinessSector(row.business_sector),
-    interests: new ExplorationInterest(row.interests),
+    organizationType: new OrganizationType(row.organization_type),
     user: row.user ? rowToUser(row.user) : null,
   });
 

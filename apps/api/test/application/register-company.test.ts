@@ -18,7 +18,7 @@ const data = {
   companyName: "Acme",
   country: "Argentina",
   businessSector: "Technology",
-  interests: ["Evaluate talent in real work experience"],
+  organizationType: "StartUp",
 };
 
 const anaEmail = Email.create("ana@ejemplo.com");
@@ -43,6 +43,7 @@ describe("RegisterCompany", () => {
     assert.ok(company.user);
     assert.equal(company.user.email.value, "ana@ejemplo.com");
     assert.equal(company.companyName, "Acme");
+    assert.equal(company.organizationType.getType(), "StartUp");
     assert.equal(auth.roleOf(company.user.id), "company");
     assert.deepEqual(await users.findById(company.user.id), company.user);
     assert.deepEqual(await companies.findById(company.id), company);
@@ -60,7 +61,10 @@ describe("RegisterCompany", () => {
       registerCompany.execute({ ...data, businessSector: "Magic" }),
       ValidacionError,
     );
-    await assert.rejects(registerCompany.execute({ ...data, interests: [] }), ValidacionError);
+    await assert.rejects(
+      registerCompany.execute({ ...data, organizationType: "Government" }),
+      ValidacionError,
+    );
 
     assert.equal(await users.findByEmail(anaEmail), null);
   });

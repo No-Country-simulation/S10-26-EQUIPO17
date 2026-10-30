@@ -2,7 +2,7 @@ import { textoRequerido } from "../validaciones.js";
 import type { User } from "./user.js";
 import { Country } from "../value-objects/country.js";
 import { BusinessSector } from "../value-objects/business-sector.js";
-import { ExplorationInterest } from "../value-objects/exploration-interest.js";
+import { OrganizationType } from "../value-objects/organization-type.js";
 
 export interface CompanyProps {
   id: string;
@@ -12,7 +12,7 @@ export interface CompanyProps {
   companyName: string;
   country: Country;
   businessSector: BusinessSector;
-  interests: ExplorationInterest;
+  organizationType: OrganizationType;
   user?: User | null;
 }
 
@@ -25,7 +25,7 @@ export class Company {
     readonly companyName: string,
     readonly country: Country,
     readonly businessSector: BusinessSector,
-    readonly interests: ExplorationInterest,
+    readonly organizationType: OrganizationType,
     readonly user: User | null,
   ) {}
 
@@ -38,7 +38,7 @@ export class Company {
       textoRequerido(props.companyName, "companyName"),
       props.country,
       props.businessSector,
-      props.interests,
+      props.organizationType,
       props.user ?? null,
     );
   }

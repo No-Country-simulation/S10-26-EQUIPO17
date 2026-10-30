@@ -9,7 +9,7 @@ export interface RegisterCompanyData {
   companyName: string;
   country: string;
   businessSector: string;
-  interests: string[];
+  organizationType: string;
 }
 
 /** Signs up a company: creates its user (with the company role) and the company itself. */

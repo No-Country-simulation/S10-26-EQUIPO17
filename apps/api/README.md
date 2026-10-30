@@ -8,7 +8,7 @@ externas siguen el enfoque **hexagonal (puertos y adaptadores)**.
 ```
 src/
 ├── domain/                 1. Entidades: reglas de negocio puras
-│   ├── entities/           User, Company, Country, BusinessSector, ExplorationInterest
+│   ├── entities/           User, Company, Country, BusinessSector, OrganizationType
 │   ├── value-objects/      Email, UserRole
 │   ├── errors.ts           ValidacionError, NoEncontradoError, ConflictoError, CredencialesInvalidasError
 │   └── validaciones.ts
@@ -56,7 +56,7 @@ Los `import` solo pueden apuntar **hacia adentro**: `infrastructure → adapters
 | Método | Ruta            | Body                                                | Respuesta                                     |
 | ------ | --------------- | --------------------------------------------------- | --------------------------------------------- |
 | GET    | `/`             | —                                                   | `{"status":"ok"}`                             |
-| POST   | `/companies/register` | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "interests": [] }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, interests, user }` |
+| POST   | `/companies/register` | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "organizationType" }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, organizationType, user }` |
 | POST   | `/auth/login`   | `{ "email", "password" }`                           | `200 { user: { id, email, role } }` + cookies de sesión |
 
 Errores: `{ "error": "mensaje" }` con `400` (validación o JSON mal formado), `401` (email o

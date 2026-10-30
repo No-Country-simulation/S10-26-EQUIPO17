@@ -3,7 +3,7 @@ import { User } from "../../domain/entities/user.js";
 import { BusinessSector } from "../../domain/value-objects/business-sector.js";
 import { Country } from "../../domain/value-objects/country.js";
 import { Email } from "../../domain/value-objects/email.js";
-import { ExplorationInterest } from "../../domain/value-objects/exploration-interest.js";
+import { OrganizationType } from "../../domain/value-objects/organization-type.js";
 import type { RegisterCompany, RegisterCompanyData } from "../ports/in/register-company.js";
 import type { AuthProvider } from "../ports/out/auth-provider.js";
 import type { CompanyRepository } from "../ports/out/company-repository.js";
@@ -28,7 +28,7 @@ export class RegisterCompanyUseCase implements RegisterCompany {
       companyName: data.companyName,
       country: new Country(data.country),
       businessSector: new BusinessSector(data.businessSector),
-      interests: new ExplorationInterest(data.interests),
+      organizationType: new OrganizationType(data.organizationType),
     };
     // Validate the whole company before creating the user, so invalid data never leaves one behind.
     Company.create(props);

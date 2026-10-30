@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { RegisterCompany } from "../../../application/ports/in/register-company.js";
-import { leerCuerpo, leerListaDeTextos, leerTexto } from "./cuerpo.js";
+import { leerCuerpo, leerTexto } from "./cuerpo.js";
 import { companyToResponse } from "./respuestas.js";
 
 export function companyRoutes(registerCompany: RegisterCompany): Router {
@@ -17,7 +17,7 @@ export function companyRoutes(registerCompany: RegisterCompany): Router {
       companyName: leerTexto(cuerpo, "companyName"),
       country: leerTexto(cuerpo, "country"),
       businessSector: leerTexto(cuerpo, "businessSector"),
-      interests: leerListaDeTextos(cuerpo, "interests"),
+      organizationType: leerTexto(cuerpo, "organizationType"),
     });
     res.status(201).json(companyToResponse(company));
   });

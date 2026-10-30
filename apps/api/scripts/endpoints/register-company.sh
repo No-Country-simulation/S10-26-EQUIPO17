@@ -17,7 +17,7 @@ request -X POST "$API_URL/companies/register" \
   "companyName": "${COMPANY_NAME:-Acme}",
   "country": "${COUNTRY:-Argentina}",
   "businessSector": "${BUSINESS_SECTOR:-Technology}",
-  "interests": ["${INTEREST:-Get multiple solutions for your project}"]
+  "organizationType": "${ORGANIZATION_TYPE:-Company}"
 }
 JSON
 

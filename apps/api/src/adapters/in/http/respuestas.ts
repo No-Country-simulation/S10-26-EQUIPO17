@@ -17,7 +17,7 @@ export interface CompanyResponse {
   companyName: string;
   country: string;
   businessSector: string;
-  interests: string[];
+  organizationType: string;
   user: UserResponse | null;
 }
 
@@ -43,6 +43,6 @@ export const companyToResponse =(company: Company): CompanyResponse => ({
   companyName: company.companyName,
   country: company.country.getCountry(),
   businessSector: company.businessSector.getSector(),
-  interests: company.interests.getInterest(),
+  organizationType: company.organizationType.getType(),
   user: company.user ? userToResponse(company.user) : null,
 });

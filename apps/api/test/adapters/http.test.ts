@@ -130,7 +130,7 @@ describe("API HTTP", () => {
       companyName: "Acme",
       country: "Argentina",
       businessSector: "Technology",
-      interests: ["Evaluate talent in real work experience"],
+      organizationType: "Educational Institute",
     };
 
     it("crea el usuario y la company en una sola request", async () => {
@@ -146,7 +146,7 @@ describe("API HTTP", () => {
         companyName: "Acme",
         country: "Argentina",
         businessSector: "Technology",
-        interests: ["Evaluate talent in real work experience"],
+        organizationType: "Educational Institute",
         user: { id: company.user.id, email: "registro@ejemplo.com" },
       });
     });
@@ -160,12 +160,14 @@ describe("API HTTP", () => {
       assert.equal((await post("/companies/register", JSON.stringify(datos))).status, 201);
     });
 
-    it("responde 400 ante un country, businessSector o interest inválido", async () => {
+    it("responde 400 ante un country, businessSector u organizationType inválido", async () => {
       const cases = [
         { override: { country: "Narnia" }, error: "Invalid country: Narnia" },
         { override: { businessSector: "Magic" }, error: "Invalid business sector: Magic" },
-        { override: { interests: ["Nope"] }, error: "Invalid interests: Nope" },
-        { override: { interests: [] }, error: "At least one interest is required" },
+        {
+          override: { organizationType: "Government" },
+          error: "Invalid organization type: Government",
+        },
       ];
 
       for (const { override, error } of cases) {
@@ -175,9 +177,9 @@ describe("API HTTP", () => {
       }
     });
 
-    it("responde 400 si interests no es una lista de textos o faltan campos", async () => {
-      const sinLista = { ...registro, interests: "Evaluate talent in real work experience" };
-      assert.equal((await post("/companies/register", JSON.stringify(sinLista))).status, 400);
+    it("responde 400 si organizationType no es un texto o faltan campos", async () => {
+      const sinTexto = { ...registro, organizationType: ["StartUp"] };
+      assert.equal((await post("/companies/register", JSON.stringify(sinTexto))).status, 400);
       const soloNombre = JSON.stringify({ companyName: "Acme" });
       assert.equal((await post("/companies/register", soloNombre)).status, 400);
     });
@@ -213,7 +215,7 @@ describe("API HTTP", () => {
           companyName: "Acme",
           country: "Argentina",
           businessSector: "Technology",
-          interests: ["Evaluate talent in real work experience"],
+          organizationType: "Educational Institute",
         }),
       );
       userId = ((await res.json()) as { user: { id: string } }).user.id;

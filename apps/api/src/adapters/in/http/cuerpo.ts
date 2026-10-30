@@ -18,11 +18,3 @@ export function leerTexto(cuerpo: Cuerpo, campo: string): string {
   }
   return valor;
 }
-
-export function leerListaDeTextos(cuerpo: Cuerpo, campo: string): string[] {
-  const valor = cuerpo[campo];
-  if (!Array.isArray(valor) || !valor.every((item) => typeof item === "string")) {
-    throw new ValidacionError(`El campo "${campo}" debe ser una lista de textos`);
-  }
-  return valor;
-}
