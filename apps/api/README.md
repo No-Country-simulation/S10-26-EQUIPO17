@@ -8,7 +8,7 @@ externas siguen el enfoque **hexagonal (puertos y adaptadores)**.
 ```
 src/
 ├── domain/                 1. Entidades: reglas de negocio puras
-│   ├── entities/           User, Company, Country, BusinessSector, OrganizationType
+│   ├── entities/           User, Company, Project, Country, BusinessSector, OrganizationType, Vertical, ProjectStage
 │   ├── value-objects/      Email, UserRole
 │   ├── errors.ts           ValidacionError, NoEncontradoError, ConflictoError, CredencialesInvalidasError
 │   └── validaciones.ts
