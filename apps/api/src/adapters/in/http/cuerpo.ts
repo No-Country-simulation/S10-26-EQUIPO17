@@ -18,8 +18,3 @@ export function leerTexto(cuerpo: Cuerpo, campo: string): string {
   }
   return valor;
 }
-
-export function leerTextoOpcional(cuerpo: Cuerpo, campo: string): string | null {
-  const valor = cuerpo[campo];
-  return valor === undefined || valor === null ? null : leerTexto(cuerpo, campo);
-}

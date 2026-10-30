@@ -1,27 +1,48 @@
-import type { Empresa } from "../../../domain/entities/empresa.js";
-import type { Usuario } from "../../../domain/entities/usuario.js";
+import type { Company } from "../../../domain/entities/company.js";
+import type { Session } from "../../../application/ports/in/log-in.js";
+import type { User } from "../../../domain/entities/user.js";
+import type { UserRole } from "../../../domain/value-objects/user-role.js";
 
-// DTOs de salida. La clave (aunque esté hasheada) nunca sale de la API.
-export interface UsuarioRespuesta {
+// DTOs de salida. El password (aunque esté hasheado) nunca sale de la API.
+export interface UserResponse {
   id: string;
-  correo: string;
+  email: string;
 }
 
-export interface EmpresaRespuesta {
+export interface CompanyResponse {
   id: string;
-  nombre: string;
-  pais: string;
-  usuario: UsuarioRespuesta | null;
+  firstName: string;
+  lastName: string;
+  jobPosition: string;
+  companyName: string;
+  country: string;
+  businessSector: string;
+  organizationType: string;
+  user: UserResponse | null;
 }
 
-export const usuarioARespuesta = (usuario: Usuario): UsuarioRespuesta => ({
-  id: usuario.id,
-  correo: usuario.correo.valor,
+export const userToResponse = (user: User): UserResponse => ({
+  id: user.id,
+  email: user.email.value,
 });
 
-export const empresaARespuesta = (empresa: Empresa): EmpresaRespuesta => ({
-  id: empresa.id,
-  nombre: empresa.nombre,
-  pais: empresa.pais,
-  usuario: empresa.usuario ? usuarioARespuesta(empresa.usuario) : null,
+/** Tokens are left out on purpose: they only travel in HttpOnly cookies. */
+export interface SessionResponse {
+  user: UserResponse & { role: UserRole | null };
+}
+
+export const sessionToResponse = (session: Session): SessionResponse => ({
+  user: { ...userToResponse(session.user), role: session.role },
+});
+
+export const companyToResponse =(company: Company): CompanyResponse => ({
+  id: company.id,
+  firstName: company.firstName,
+  lastName: company.lastName,
+  jobPosition: company.jobPosition,
+  companyName: company.companyName,
+  country: company.country.getCountry(),
+  businessSector: company.businessSector.getSector(),
+  organizationType: company.organizationType.getType(),
+  user: company.user ? userToResponse(company.user) : null,
 });

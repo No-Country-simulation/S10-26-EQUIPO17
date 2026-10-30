@@ -1,57 +1,67 @@
 // Forma de las filas en Postgres (ver supabase/migrations) y su traducción a entidades.
 // El dominio no conoce nombres de columnas: eso queda encerrado acá.
 import type { PostgrestError } from "@supabase/supabase-js";
-import { Empresa } from "../../../../domain/entities/empresa.js";
-import { Usuario } from "../../../../domain/entities/usuario.js";
+import { BusinessSector } from "../../../../domain/value-objects/business-sector.js";
+import { Company } from "../../../../domain/entities/company.js";
+import { Country } from "../../../../domain/value-objects/country.js";
+import { OrganizationType } from "../../../../domain/value-objects/organization-type.js";
+import { User } from "../../../../domain/entities/user.js";
 import { ConflictoError } from "../../../../domain/errors.js";
-import { Correo } from "../../../../domain/value-objects/correo.js";
+import { Email } from "../../../../domain/value-objects/email.js";
 
-export interface FilaUsuario {
+export interface UserRow {
   id: string;
-  correo: string;
-  clave_hash: string;
+  email: string;
 }
 
-export interface FilaEmpresa {
+export interface CompanyRow {
   id: string;
-  nombre: string;
-  pais: string;
-  usuario_id: string | null;
+  first_name: string;
+  last_name: string;
+  job_position: string;
+  company_name: string;
+  country: string;
+  business_sector: string;
+  organization_type: string;
+  user_id: string | null;
 }
 
-export type FilaEmpresaConUsuario = Omit<FilaEmpresa, "usuario_id"> & {
-  usuario: FilaUsuario | null;
+export type CompanyWithUserRow = Omit<CompanyRow, "user_id"> & {
+  user: UserRow | null;
 };
 
-export const COLUMNAS_USUARIO = "id, correo, clave_hash";
-export const COLUMNAS_EMPRESA_CON_USUARIO = `id, nombre, pais, usuario:usuarios(${COLUMNAS_USUARIO})`;
+export const USER_COLUMNS = "id, email";
+export const COMPANY_WITH_USER_COLUMNS = `id, first_name, last_name, job_position, company_name, country, business_sector, organization_type, user:users(${USER_COLUMNS})`;
 
-export const usuarioAFila = (usuario: Usuario): FilaUsuario => ({
-  id: usuario.id,
-  correo: usuario.correo.valor,
-  clave_hash: usuario.clave,
-});
-
-export const filaAUsuario = (fila: FilaUsuario): Usuario =>
-  Usuario.crear({
-    id: fila.id,
-    correo: Correo.crear(fila.correo),
-    clave: fila.clave_hash,
+export const rowToUser = (row: UserRow): User =>
+  User.create({
+    id: row.id,
+    email: Email.create(row.email),
   });
 
-export const empresaAFila = (empresa: Empresa): FilaEmpresa => ({
-  id: empresa.id,
-  nombre: empresa.nombre,
-  pais: empresa.pais,
-  usuario_id: empresa.usuario?.id ?? null,
+export const companyToRow = (company: Company): CompanyRow => ({
+  id: company.id,
+  first_name: company.firstName,
+  last_name: company.lastName,
+  job_position: company.jobPosition,
+  company_name: company.companyName,
+  country: company.country.getCountry(),
+  business_sector: company.businessSector.getSector(),
+  organization_type: company.organizationType.getType(),
+  user_id: company.user?.id ?? null,
 });
 
-export const filaAEmpresa = (fila: FilaEmpresaConUsuario): Empresa =>
-  Empresa.crear({
-    id: fila.id,
-    nombre: fila.nombre,
-    pais: fila.pais,
-    usuario: fila.usuario ? filaAUsuario(fila.usuario) : null,
+export const rowToCompany = (row: CompanyWithUserRow): Company =>
+  Company.create({
+    id: row.id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    jobPosition: row.job_position,
+    companyName: row.company_name,
+    country: new Country(row.country),
+    businessSector: new BusinessSector(row.business_sector),
+    organizationType: new OrganizationType(row.organization_type),
+    user: row.user ? rowToUser(row.user) : null,
   });
 
 // Códigos de error de Postgres que el adaptador traduce.

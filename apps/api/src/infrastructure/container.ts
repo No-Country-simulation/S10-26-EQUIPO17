@@ -1,62 +1,63 @@
 // Composition root: el único lugar que conoce las implementaciones concretas
 // y las conecta con los puertos que piden los casos de uso.
-import type { CrearEmpresa } from "../application/ports/in/crear-empresa.js";
-import type { ObtenerEmpresa } from "../application/ports/in/obtener-empresa.js";
-import type { RegistrarUsuario } from "../application/ports/in/registrar-usuario.js";
+import type { LogIn } from "../application/ports/in/log-in.js";
+import type { RegisterCompany } from "../application/ports/in/register-company.js";
 import type { GeneradorDeIds } from "../application/ports/out/generador-de-ids.js";
-import type { HasherDeClaves } from "../application/ports/out/hasher-de-claves.js";
-import type { RepositorioDeEmpresas } from "../application/ports/out/repositorio-de-empresas.js";
-import type { RepositorioDeUsuarios } from "../application/ports/out/repositorio-de-usuarios.js";
-import { CrearEmpresaCasoDeUso } from "../application/use-cases/crear-empresa.js";
-import { ObtenerEmpresaCasoDeUso } from "../application/use-cases/obtener-empresa.js";
-import { RegistrarUsuarioCasoDeUso } from "../application/use-cases/registrar-usuario.js";
+import type { AuthProvider } from "../application/ports/out/auth-provider.js";
+import type { CompanyRepository } from "../application/ports/out/company-repository.js";
+import type { UserRepository } from "../application/ports/out/user-repository.js";
+import { LogInUseCase } from "../application/use-cases/log-in.js";
+import { RegisterCompanyUseCase } from "../application/use-cases/register-company.js";
+import { InMemoryAuthProvider } from "../adapters/out/auth/in-memory-auth-provider.js";
+import { SupabaseAuthProvider } from "../adapters/out/auth/supabase-auth-provider.js";
 import { GeneradorDeIdsUuid } from "../adapters/out/ids/generador-de-ids-uuid.js";
-import { RepositorioDeEmpresasEnMemoria } from "../adapters/out/persistence/memory/repositorio-de-empresas-en-memoria.js";
-import { RepositorioDeUsuariosEnMemoria } from "../adapters/out/persistence/memory/repositorio-de-usuarios-en-memoria.js";
-import { RepositorioDeEmpresasSupabase } from "../adapters/out/persistence/supabase/repositorio-de-empresas-supabase.js";
-import { RepositorioDeUsuariosSupabase } from "../adapters/out/persistence/supabase/repositorio-de-usuarios-supabase.js";
-import { HasherDeClavesScrypt } from "../adapters/out/security/hasher-de-claves-scrypt.js";
+import { InMemoryCompanyRepository } from "../adapters/out/persistence/memory/in-memory-company-repository.js";
+import { InMemoryUserRepository } from "../adapters/out/persistence/memory/in-memory-user-repository.js";
+import { SupabaseCompanyRepository } from "../adapters/out/persistence/supabase/supabase-company-repository.js";
+import { SupabaseUserRepository } from "../adapters/out/persistence/supabase/supabase-user-repository.js";
 import type { Config } from "./config/env.js";
 import { crearClienteSupabase } from "./supabase/client.js";
 
 /** Puertos de salida que necesitan los casos de uso. */
 export interface Dependencias {
-  usuarios: RepositorioDeUsuarios;
-  empresas: RepositorioDeEmpresas;
-  hasher: HasherDeClaves;
+  users: UserRepository;
+  companies: CompanyRepository;
+  auth: AuthProvider;
   ids: GeneradorDeIds;
 }
 
 /** Puertos de entrada que consume el adaptador HTTP. */
 export interface CasosDeUso {
-  registrarUsuario: RegistrarUsuario;
-  crearEmpresa: CrearEmpresa;
-  obtenerEmpresa: ObtenerEmpresa;
+  registerCompany: RegisterCompany;
+  logIn: LogIn;
 }
 
 export function crearDependencias(config: Config): Dependencias {
-  const comunes = { hasher: new HasherDeClavesScrypt(), ids: new GeneradorDeIdsUuid() };
+  const ids = new GeneradorDeIdsUuid();
 
   if (config.supabase === null) {
+    const users = new InMemoryUserRepository();
     return {
-      ...comunes,
-      usuarios: new RepositorioDeUsuariosEnMemoria(),
-      empresas: new RepositorioDeEmpresasEnMemoria(),
+      ids,
+      users,
+      auth: new InMemoryAuthProvider(users, ids),
+      companies: new InMemoryCompanyRepository(),
     };
   }
 
-  const supabase = crearClienteSupabase(config.supabase.url, config.supabase.claveSecreta);
+  const { url, claveSecreta } = config.supabase;
+  const supabase = crearClienteSupabase(url, claveSecreta);
   return {
-    ...comunes,
-    usuarios: new RepositorioDeUsuariosSupabase(supabase),
-    empresas: new RepositorioDeEmpresasSupabase(supabase),
+    ids,
+    auth: new SupabaseAuthProvider(supabase, () => crearClienteSupabase(url, claveSecreta)),
+    users: new SupabaseUserRepository(supabase),
+    companies: new SupabaseCompanyRepository(supabase),
   };
 }
 
-export function crearCasosDeUso({ usuarios, empresas, hasher, ids }: Dependencias): CasosDeUso {
+export function crearCasosDeUso({ companies, auth, ids }: Dependencias): CasosDeUso {
   return {
-    registrarUsuario: new RegistrarUsuarioCasoDeUso(usuarios, hasher, ids),
-    crearEmpresa: new CrearEmpresaCasoDeUso(empresas, usuarios, ids),
-    obtenerEmpresa: new ObtenerEmpresaCasoDeUso(empresas),
+    registerCompany: new RegisterCompanyUseCase(auth, companies, ids),
+    logIn: new LogInUseCase(auth),
   };
 }

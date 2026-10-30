@@ -1,18 +1,18 @@
 import { apiClient } from '../../shared/api/apiClient'
 
 export interface RegisterData {
-  correo: string
-  clave: string
+  email: string
+  password: string
 }
 
 export interface RegisteredUser {
   id: string
-  correo: string
+  email: string
 }
 
-// La API expone el registro en POST /usuarios.
+// La API expone el registro en POST /users.
 export function register(data: RegisterData): Promise<RegisteredUser> {
-  return apiClient<RegisteredUser>('/usuarios', {
+  return apiClient<RegisteredUser>('/users', {
     method: 'POST',
     body: JSON.stringify(data),
   })
