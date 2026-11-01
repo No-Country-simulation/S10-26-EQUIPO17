@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+// Same-origin path: the Vite proxy (dev) and the Vercel rewrite (prod) forward /api to the API, so
+// the session cookies are first-party and fetch sends them without `credentials: "include"`.
+const API_URL = import.meta.env.VITE_API_URL ?? '/api'
 
 export class ApiError extends Error {
   readonly status: number
