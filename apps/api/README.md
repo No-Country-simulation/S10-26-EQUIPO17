@@ -93,35 +93,26 @@ puede leer.
 raíz). Un email desconocido y una contraseña incorrecta devuelven el mismo `401`, así no se revela
 qué emails están registrados.
 
-### Proxy en producción
+### Proxy: la web y la API en el mismo origen
 
 La web (Vercel) y la API (EC2) están en sitios distintos. Para que las cookies de sesión sean de
-primera parte, el navegador nunca le habla directo a la EC2: Vercel reenvía `/api/*` a la API con un
-rewrite en `apps/web/vercel.json`, ubicado antes del catch-all de la SPA:
+primera parte, el navegador nunca le habla directo a la API: siempre pide `/api/*` al origen de la
+web y un proxy lo reenvía.
 
-```json
-{ "source": "/api/:path*", "destination": "https://<host-de-la-api>/api/:path*" }
-```
+| Entorno    | Proxy                                         | Destino                  |
+| ---------- | --------------------------------------------- | ------------------------ |
+| Desarrollo | `server.proxy` en `apps/web/vite.config.ts`   | `http://127.0.0.1:3000`  |
+| Producción | `rewrites` en `apps/web/vercel.json`, antes del catch-all de la SPA | La EC2, por HTTPS |
 
-Así el navegador ve la API en el mismo origen que la web y pasa lo siguiente:
+Así:
 
 - `SameSite=Lax` frena el CSRF: un formulario de otro sitio llega sin cookies.
 - Safari y Firefox no bloquean las cookies, porque no son de terceros.
-- No hace falta CORS: `CORS_ORIGINS` queda vacío en producción.
+- La API no habilita CORS: ningún request legítimo es cross-origin, así que ningún otro origen
+  puede leer respuestas hechas con la sesión del usuario.
 - El tramo Vercel → EC2 lleva los tokens, así que la EC2 tiene que servir HTTPS.
 
-### CORS
-
-En desarrollo la web (`localhost:5173`) y la API (`localhost:3000`) son orígenes distintos, así que
-el navegador solo deja que el frontend lea las respuestas si la API lo autoriza. Solo los orígenes de `CORS_ORIGINS` reciben
-`Access-Control-Allow-Origin` (su propio origen, nunca `*`) y `Access-Control-Allow-Credentials`.
-El frontend tiene que hacer los `fetch` con `credentials: "include"` para recibir y mandar las
-cookies.
-
-Cualquier origen autorizado puede leer respuestas hechas con la sesión del usuario. Por eso la
-lista se compara por igualdad exacta y al arrancar se rechazan `*`, `null`, comodines, paths y
-barras finales. CORS no frena CSRF: hoy lo cubre `SameSite=Lax`. Con `SameSite=None` hará falta
-una protección propia.
+Con `SameSite=None` hará falta una protección propia contra CSRF.
 
 ### Login en Supabase
 

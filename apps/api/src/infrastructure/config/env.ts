@@ -13,8 +13,6 @@ export interface Config {
   persistencia: Persistencia;
   supabase: { url: string; claveSecreta: string } | null;
   cookies: OpcionesDeCookie;
-  /** Orígenes exactos que pueden llamar a la API con las cookies de sesión. */
-  corsOrigins: string[];
 }
 
 function requerida(env: NodeJS.ProcessEnv, nombre: string): string {
@@ -38,35 +36,6 @@ function leerCookies(env: NodeJS.ProcessEnv): OpcionesDeCookie {
   return { secure, sameSite };
 }
 
-// Cada origen autorizado puede leer respuestas hechas con la sesión del usuario, así que
-// solo se aceptan orígenes exactos: nada de "*", "null", comodines, paths ni barras finales.
-function leerCorsOrigins(env: NodeJS.ProcessEnv): string[] {
-  const valor = env.CORS_ORIGINS?.trim();
-  if (!valor) return [];
-
-  return valor.split(",").map((parte) => {
-    const origen = parte.trim();
-    let url: URL | null = null;
-    try {
-      url = new URL(origen);
-    } catch {
-      // Se informa abajo junto con el resto de los valores inválidos.
-    }
-    // URL acepta "*" dentro del host, por eso se rechaza aparte.
-    const esExacto =
-      url !== null &&
-      (url.protocol === "http:" || url.protocol === "https:") &&
-      url.origin === origen &&
-      !origen.includes("*");
-    if (!esExacto) {
-      throw new Error(
-        `CORS_ORIGINS solo admite orígenes exactos como "https://web.com", no "${origen}"`,
-      );
-    }
-    return origen;
-  });
-}
-
 export function leerConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const persistencia = env.PERSISTENCIA ?? "supabase";
   if (persistencia !== "supabase" && persistencia !== "memoria") {
@@ -84,6 +53,5 @@ export function leerConfig(env: NodeJS.ProcessEnv = process.env): Config {
           }
         : null,
     cookies: leerCookies(env),
-    corsOrigins: leerCorsOrigins(env),
   };
 }
