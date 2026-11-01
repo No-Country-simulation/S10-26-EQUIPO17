@@ -55,16 +55,18 @@ Los `import` solo pueden apuntar **hacia adentro**: `infrastructure → adapters
 
 | Método | Ruta            | Body                                                | Respuesta                                     |
 | ------ | --------------- | --------------------------------------------------- | --------------------------------------------- |
-| GET    | `/`             | —                                                   | `{"status":"ok"}`                             |
-| POST   | `/companies/register` | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "organizationType" }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, organizationType, user }` |
-| POST   | `/auth/login`   | `{ "email", "password" }`                           | `200 { user: { id, email, role } }` + cookies de sesión |
+| GET    | `/api`          | —                                                   | `{"status":"ok"}`                             |
+| POST   | `/api/companies/register` | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "organizationType" }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, organizationType, user }` |
+| POST   | `/api/auth/login` | `{ "email", "password" }`                         | `200 { user: { id, email, role } }` + cookies de sesión |
+
+Todas las rutas viven bajo `/api` (`API_PREFIX` en `adapters/in/http/api-prefix.ts`).
 
 Errores: `{ "error": "mensaje" }` con `400` (validación o JSON mal formado), `401` (email o
 contraseña incorrectos), `404` (ruta inexistente) o `409` (email ya registrado).
 
 ### Registro de una company
 
-`POST /companies/register` crea el usuario y la company en una sola request:
+`POST /api/companies/register` crea el usuario y la company en una sola request:
 
 1. Valida el email, la contraseña y todos los datos de la company antes de crear nada.
 2. Crea el usuario en Supabase Auth con `app_metadata.role = "company"`.
@@ -76,7 +78,7 @@ company sin usuario ni vincularla a un usuario existente.
 
 ### Sesión
 
-`POST /auth/login` devuelve el usuario con su `role` (`"company"` o `null` si no tiene uno), para
+`POST /api/auth/login` devuelve el usuario con su `role` (`"company"` o `null` si no tiene uno), para
 que el frontend decida qué mostrar. La autorización la sigue haciendo la API.
 
 Los tokens no van en el body: se guardan en cookies `HttpOnly`, que el JavaScript del frontend no
@@ -84,17 +86,34 @@ puede leer.
 
 | Cookie          | `Path`  | Duración                     |
 | --------------- | ------- | ---------------------------- |
-| `access_token`  | `/`     | La del JWT de Supabase (1 h) |
-| `refresh_token` | `/auth` | 30 días                      |
+| `access_token`  | `/api`      | La del JWT de Supabase (1 h) |
+| `refresh_token` | `/api/auth` | 30 días                      |
 
 `Secure` y `SameSite` se configuran con `COOKIE_SECURE` y `COOKIE_SAME_SITE` (ver el README de la
 raíz). Un email desconocido y una contraseña incorrecta devuelven el mismo `401`, así no se revela
 qué emails están registrados.
 
+### Proxy en producción
+
+La web (Vercel) y la API (EC2) están en sitios distintos. Para que las cookies de sesión sean de
+primera parte, el navegador nunca le habla directo a la EC2: Vercel reenvía `/api/*` a la API con un
+rewrite en `apps/web/vercel.json`, ubicado antes del catch-all de la SPA:
+
+```json
+{ "source": "/api/:path*", "destination": "https://<host-de-la-api>/api/:path*" }
+```
+
+Así el navegador ve la API en el mismo origen que la web y pasa lo siguiente:
+
+- `SameSite=Lax` frena el CSRF: un formulario de otro sitio llega sin cookies.
+- Safari y Firefox no bloquean las cookies, porque no son de terceros.
+- No hace falta CORS: `CORS_ORIGINS` queda vacío en producción.
+- El tramo Vercel → EC2 lleva los tokens, así que la EC2 tiene que servir HTTPS.
+
 ### CORS
 
-La web y la API van en dominios distintos, así que el navegador solo deja que el frontend lea las
-respuestas si la API lo autoriza. Solo los orígenes de `CORS_ORIGINS` reciben
+En desarrollo la web (`localhost:5173`) y la API (`localhost:3000`) son orígenes distintos, así que
+el navegador solo deja que el frontend lea las respuestas si la API lo autoriza. Solo los orígenes de `CORS_ORIGINS` reciben
 `Access-Control-Allow-Origin` (su propio origen, nunca `*`) y `Access-Control-Allow-Credentials`.
 El frontend tiene que hacer los `fetch` con `credentials: "include"` para recibir y mandar las
 cookies.

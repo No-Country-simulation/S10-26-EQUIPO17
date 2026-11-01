@@ -1,5 +1,6 @@
 import cors from "cors";
-import express, { type Express } from "express";
+import express, { Router, type Express } from "express";
+import { API_PREFIX } from "../../adapters/in/http/api-prefix.js";
 import { manejadorDeErrores } from "../../adapters/in/http/manejador-de-errores.js";
 import { authRoutes } from "../../adapters/in/http/auth-routes.js";
 import { companyRoutes } from "../../adapters/in/http/company-routes.js";
@@ -28,11 +29,13 @@ export function crearApp(casos: CasosDeUso, { cookies, corsOrigins }: OpcionesHt
   );
   app.use(express.json());
 
-  app.get("/", (_req, res) => {
+  const api = Router();
+  api.get("/", (_req, res) => {
     res.json({ status: "ok" });
   });
-  app.use("/auth", authRoutes(casos.logIn, cookies));
-  app.use("/companies", companyRoutes(casos.registerCompany));
+  api.use("/auth", authRoutes(casos.logIn, cookies));
+  api.use("/companies", companyRoutes(casos.registerCompany));
+  app.use(API_PREFIX, api);
 
   app.use((_req, res) => {
     res.status(404).json({ error: "Ruta no encontrada" });

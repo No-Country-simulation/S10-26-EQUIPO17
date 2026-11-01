@@ -9,6 +9,7 @@ import { crearApp } from "../../src/infrastructure/http/app.js";
 // Levanta la app real con los adaptadores en memoria y le pega por HTTP.
 describe("API HTTP", () => {
   let server: Server;
+  let origen: string;
   let base: string;
   const web = "https://web.ejemplo.com";
   const config = {
@@ -23,7 +24,8 @@ describe("API HTTP", () => {
     const casos = crearCasosDeUso(crearDependencias({ ...config, corsOrigins: [web] }));
     server = crearApp(casos, { ...config, corsOrigins: [web] }).listen(0);
     await new Promise((resolve) => server.once("listening", resolve));
-    base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    origen = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    base = `${origen}/api`;
   });
 
   after(() => {
@@ -107,7 +109,20 @@ describe("API HTTP", () => {
     });
   });
 
-  it("GET / responde el health check", async () => {
+  it("solo expone las rutas bajo /api, que es lo que el proxy de Vercel reenvía", async () => {
+    const credenciales = JSON.stringify({ email: "a@ejemplo.com", password: "clave-segura" });
+    for (const ruta of ["/auth/login", "/companies/register"]) {
+      const res = await fetch(`${origen}${ruta}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: credenciales,
+      });
+      assert.equal(res.status, 404, ruta);
+    }
+    assert.equal((await fetch(`${origen}/`)).status, 404);
+  });
+
+  it("GET /api responde el health check", async () => {
     const res = await fetch(`${base}/`);
     assert.equal(res.status, 200);
     assert.deepEqual(await res.json(), { status: "ok" });
@@ -230,8 +245,8 @@ describe("API HTTP", () => {
       });
 
       const [access = "", refresh = ""] = res.headers.getSetCookie();
-      assert.match(access, /^access_token=[^;]+; Max-Age=3600; Path=\/; /);
-      assert.match(refresh, /^refresh_token=[^;]+; Max-Age=\d+; Path=\/auth; /);
+      assert.match(access, /^access_token=[^;]+; Max-Age=3600; Path=\/api; /);
+      assert.match(refresh, /^refresh_token=[^;]+; Max-Age=\d+; Path=\/api\/auth; /);
       for (const cookie of [access, refresh]) {
         assert.match(cookie, /; HttpOnly/);
         assert.match(cookie, /; Secure/);

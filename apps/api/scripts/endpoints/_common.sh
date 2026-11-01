@@ -2,7 +2,7 @@
 # Shared settings for the endpoint scripts. Override any value through the environment.
 set -euo pipefail
 
-API_URL="${API_URL:-http://localhost:3000}"
+API_URL="${API_URL:-http://localhost:3000/api}"
 
 # Prints the response status line, headers and body; exits non-zero on HTTP errors.
 request() {
