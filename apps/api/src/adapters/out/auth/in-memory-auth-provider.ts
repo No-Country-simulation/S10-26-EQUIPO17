@@ -1,10 +1,15 @@
 import type {
+  AuthenticatedUser,
   AuthProvider,
   AuthSession,
 } from "../../../application/ports/out/auth-provider.js";
 import type { GeneradorDeIds } from "../../../application/ports/out/generador-de-ids.js";
 import { User } from "../../../domain/entities/user.js";
-import { ConflictoError, CredencialesInvalidasError } from "../../../domain/errors.js";
+import {
+  ConflictoError,
+  CredencialesInvalidasError,
+  NoAutenticadoError,
+} from "../../../domain/errors.js";
 import type { Email } from "../../../domain/value-objects/email.js";
 import type { UserRole } from "../../../domain/value-objects/user-role.js";
 import type { InMemoryUserRepository } from "../persistence/memory/in-memory-user-repository.js";
@@ -20,6 +25,8 @@ const ACCESS_TOKEN_SECONDS = 3600;
 export class InMemoryAuthProvider implements AuthProvider {
   private readonly roles = new Map<string, UserRole>();
   private readonly passwords = new Map<string, string>();
+  /** Access token -> user id. */
+  private readonly accessTokens = new Map<string, string>();
 
   constructor(
     private readonly users: InMemoryUserRepository,
@@ -40,6 +47,9 @@ export class InMemoryAuthProvider implements AuthProvider {
   async remove(id: string): Promise<void> {
     this.roles.delete(id);
     this.passwords.delete(id);
+    for (const [token, userId] of this.accessTokens) {
+      if (userId === id) this.accessTokens.delete(token);
+    }
     await this.users.delete(id);
   }
 
@@ -48,13 +58,21 @@ export class InMemoryAuthProvider implements AuthProvider {
     if (!user || this.passwords.get(user.id) !== password) {
       throw new CredencialesInvalidasError();
     }
+    const accessToken = this.ids.generar();
+    this.accessTokens.set(accessToken, user.id);
     return {
       userId: user.id,
       role: this.roleOf(user.id),
-      accessToken: this.ids.generar(),
+      accessToken,
       refreshToken: this.ids.generar(),
       expiresIn: ACCESS_TOKEN_SECONDS,
     };
+  }
+
+  async verifyAccessToken(accessToken: string): Promise<AuthenticatedUser> {
+    const userId = this.accessTokens.get(accessToken);
+    if (!userId) throw new NoAutenticadoError();
+    return { userId, role: this.roleOf(userId) };
   }
 
   /** Not part of the port: lets tests check the role a user was registered with. */

@@ -1,11 +1,23 @@
-import { isAuthApiError, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  isAuthApiError,
+  isAuthSessionMissingError,
+  type SupabaseClient,
+} from "@supabase/supabase-js";
 import type {
+  AuthenticatedUser,
   AuthProvider,
   AuthSession,
 } from "../../../application/ports/out/auth-provider.js";
-import { ConflictoError, CredencialesInvalidasError } from "../../../domain/errors.js";
+import {
+  ConflictoError,
+  CredencialesInvalidasError,
+  NoAutenticadoError,
+} from "../../../domain/errors.js";
 import type { Email } from "../../../domain/value-objects/email.js";
 import { isUserRole, type UserRole } from "../../../domain/value-objects/user-role.js";
+
+/** Printable ASCII without spaces: anything else cannot be sent in the Authorization header. */
+const HEADER_SAFE_TOKEN = /^[\x21-\x7e]+$/;
 
 // The on_auth_user_created trigger (see supabase/migrations) copies the new
 // auth.users row into public.users, so this adapter only talks to Auth.
@@ -41,6 +53,28 @@ export class SupabaseAuthProvider implements AuthProvider {
       refreshToken: data.session.refresh_token,
       expiresIn: data.session.expires_in,
     };
+  }
+
+  // Passing the token keeps the shared client stateless: no session is stored in it.
+  async verifyAccessToken(accessToken: string): Promise<AuthenticatedUser> {
+    // Otherwise fetch throws while building the request, which looks just like a network failure.
+    if (!HEADER_SAFE_TOKEN.test(accessToken)) {
+      throw new NoAutenticadoError();
+    }
+    const { data, error } = await this.supabase.auth.getUser(accessToken);
+    // Only a refusal means "not logged in"; an outage has to surface as a server error.
+    // A revoked session comes back as AuthSessionMissingError, not as an AuthApiError.
+    if (
+      isAuthSessionMissingError(error) ||
+      (isAuthApiError(error) && (error.status === 401 || error.status === 403))
+    ) {
+      throw new NoAutenticadoError();
+    }
+    if (error || !data.user) {
+      throw new Error(`Supabase Auth: ${error?.message ?? "no user returned"}`, { cause: error });
+    }
+    const role = data.user.app_metadata.role;
+    return { userId: data.user.id, role: isUserRole(role) ? role : null };
   }
 
   async register(email: Email, password: string, role?: UserRole): Promise<string> {

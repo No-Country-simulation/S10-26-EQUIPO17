@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { after, before, describe, it } from "node:test";
-import { crearCasosDeUso, crearDependencias } from "../../src/infrastructure/container.js";
+import { Email } from "../../src/domain/value-objects/email.js";
+import {
+  crearCasosDeUso,
+  crearDependencias,
+  type Dependencias,
+} from "../../src/infrastructure/container.js";
 import type { Config } from "../../src/infrastructure/config/env.js";
 import { crearApp } from "../../src/infrastructure/http/app.js";
 
@@ -11,6 +16,7 @@ describe("API HTTP", () => {
   let server: Server;
   let origen: string;
   let base: string;
+  let dependencias: Dependencias;
   const config = {
     puerto: 0,
     persistencia: "memoria",
@@ -19,8 +25,8 @@ describe("API HTTP", () => {
   } as const satisfies Config;
 
   before(async () => {
-    const casos = crearCasosDeUso(crearDependencias(config));
-    server = crearApp(casos, config).listen(0);
+    dependencias = crearDependencias(config);
+    server = crearApp(crearCasosDeUso(dependencias), config).listen(0);
     await new Promise((resolve) => server.once("listening", resolve));
     origen = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     base = `${origen}/api`;
@@ -214,6 +220,128 @@ describe("API HTTP", () => {
     it("responde 400 si falta la contraseña", async () => {
       const res = await post("/auth/login", JSON.stringify({ email: credenciales.email }));
       assert.equal(res.status, 400);
+    });
+  });
+
+  describe("POST /projects", () => {
+    const clave = "clave-segura";
+    const proyecto = {
+      title: "Marketplace",
+      description: "A platform to connect buyers and sellers",
+      vertical: "E-commerce",
+      businessSectors: ["Product", "IT"],
+      projectStage: "MVP",
+    };
+    let cookie: string;
+    let companyId: string;
+
+    /** Logs in and returns the access_token cookie, as the browser would send it back. */
+    const iniciarSesion = async (email: string) => {
+      const res = await post("/auth/login", JSON.stringify({ email, password: clave }));
+      const [access = ""] = res.headers.getSetCookie();
+      return access.split(";")[0] ?? "";
+    };
+
+    const subir = (body: unknown, cookies?: string) =>
+      fetch(`${base}/projects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(cookies ? { Cookie: cookies } : {}) },
+        body: JSON.stringify(body),
+      });
+
+    before(async () => {
+      const email = "proyectos@ejemplo.com";
+      const res = await post(
+        "/companies/register",
+        JSON.stringify({
+          email,
+          password: clave,
+          firstName: "Ana",
+          lastName: "García",
+          jobPosition: "CTO",
+          companyName: "Acme",
+          country: "Argentina",
+          businessSector: "IT",
+          organizationType: "Educational Institute",
+        }),
+      );
+      companyId = ((await res.json()) as { id: string }).id;
+      cookie = await iniciarSesion(email);
+    });
+
+    it("crea el proyecto a nombre de la company de la sesión", async () => {
+      const res = await subir(proyecto, cookie);
+
+      assert.equal(res.status, 201);
+      const creado = (await res.json()) as { id: string };
+      assert.ok(creado.id);
+      assert.deepEqual(creado, { id: creado.id, companyId, ...proyecto });
+    });
+
+    it("ignora un companyId enviado en el body", async () => {
+      const res = await subir({ ...proyecto, companyId: "otra-company" }, cookie);
+
+      assert.equal(res.status, 201);
+      assert.equal(((await res.json()) as { companyId: string }).companyId, companyId);
+    });
+
+    it("responde 401 sin la cookie de sesión", async () => {
+      const res = await subir(proyecto);
+      assert.equal(res.status, 401);
+      assert.deepEqual(await res.json(), { error: "Authentication required" });
+    });
+
+    it("responde 401 ante un token inválido o una cookie que no es texto", async () => {
+      for (const invalida of ["access_token=inventado", "access_token=j:{}"]) {
+        const res = await subir(proyecto, invalida);
+        assert.equal(res.status, 401, invalida);
+        assert.deepEqual(await res.json(), { error: "Authentication required" });
+      }
+    });
+
+    it("responde 403 si el usuario no tiene el rol company", async () => {
+      const email = "sin-rol@ejemplo.com";
+      await dependencias.auth.register(Email.create(email), clave);
+
+      const res = await subir(proyecto, await iniciarSesion(email));
+
+      assert.equal(res.status, 403);
+      assert.deepEqual(await res.json(), { error: "Only companies can upload projects" });
+    });
+
+    it("responde 403 si el usuario tiene el rol pero no su company", async () => {
+      const email = "sin-company@ejemplo.com";
+      await dependencias.auth.register(Email.create(email), clave, "company");
+
+      const res = await subir(proyecto, await iniciarSesion(email));
+
+      assert.equal(res.status, 403);
+    });
+
+    it("responde 400 ante valores inválidos", async () => {
+      const cases = [
+        { override: { vertical: "Magic" }, error: "Invalid vertical: Magic" },
+        { override: { projectStage: "Beta" }, error: "Invalid project stage: Beta" },
+        { override: { businessSectors: ["Magic"] }, error: "Invalid business sector: Magic" },
+        { override: { businessSectors: [] }, error: "At least one business sector is required" },
+      ];
+
+      for (const { override, error } of cases) {
+        const res = await subir({ ...proyecto, ...override }, cookie);
+        assert.equal(res.status, 400, JSON.stringify(override));
+        assert.deepEqual(await res.json(), { error });
+      }
+    });
+
+    it("responde 400 si faltan campos o businessSectors no es una lista de textos", async () => {
+      const { title: _title, ...sinTitulo } = proyecto;
+      for (const body of [
+        sinTitulo,
+        { ...proyecto, businessSectors: "IT" },
+        { ...proyecto, businessSectors: [1] },
+      ]) {
+        assert.equal((await subir(body, cookie)).status, 400, JSON.stringify(body));
+      }
     });
   });
 });

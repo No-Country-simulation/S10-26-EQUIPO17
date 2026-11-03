@@ -1,4 +1,5 @@
 import type { Company } from "../../../domain/entities/company.js";
+import type { Project } from "../../../domain/entities/project.js";
 import type { Session } from "../../../application/ports/in/log-in.js";
 import type { User } from "../../../domain/entities/user.js";
 import type { UserRole } from "../../../domain/value-objects/user-role.js";
@@ -45,4 +46,24 @@ export const companyToResponse =(company: Company): CompanyResponse => ({
   businessSector: company.businessSector.getSector(),
   organizationType: company.organizationType.getType(),
   user: company.user ? userToResponse(company.user) : null,
+});
+
+export interface ProjectResponse {
+  id: string;
+  companyId: string;
+  title: string;
+  description: string;
+  vertical: string;
+  businessSectors: string[];
+  projectStage: string;
+}
+
+export const projectToResponse = (project: Project): ProjectResponse => ({
+  id: project.id,
+  companyId: project.companyId,
+  title: project.title,
+  description: project.description,
+  vertical: project.vertical.getVertical(),
+  businessSectors: project.businessSectors.map((sector) => sector.getSector()),
+  projectStage: project.projectStage.getStage(),
 });

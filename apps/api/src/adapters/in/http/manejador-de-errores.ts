@@ -1,8 +1,10 @@
 import type { ErrorRequestHandler } from "express";
 import {
+  AccesoDenegadoError,
   ConflictoError,
   CredencialesInvalidasError,
   DomainError,
+  NoAutenticadoError,
   NoEncontradoError,
   ValidacionError,
 } from "../../../domain/errors.js";
@@ -10,6 +12,8 @@ import {
 function estadoDeError(error: DomainError): number {
   if (error instanceof ValidacionError) return 400;
   if (error instanceof CredencialesInvalidasError) return 401;
+  if (error instanceof NoAutenticadoError) return 401;
+  if (error instanceof AccesoDenegadoError) return 403;
   if (error instanceof NoEncontradoError) return 404;
   if (error instanceof ConflictoError) return 409;
   return 422;

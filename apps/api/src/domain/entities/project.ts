@@ -6,6 +6,7 @@ import { Vertical } from "../value-objects/vertical.js";
 
 export interface ProjectProps {
   id: string;
+  companyId: string;
   title: string;
   description: string;
   vertical: Vertical;
@@ -16,6 +17,7 @@ export interface ProjectProps {
 export class Project {
   private constructor(
     readonly id: string,
+    readonly companyId: string,
     readonly title: string,
     readonly description: string,
     readonly vertical: Vertical,
@@ -29,6 +31,7 @@ export class Project {
     }
     return new Project(
       textoRequerido(props.id, "id"),
+      textoRequerido(props.companyId, "companyId"),
       textoRequerido(props.title, "title"),
       textoRequerido(props.description, "description"),
       props.vertical,
