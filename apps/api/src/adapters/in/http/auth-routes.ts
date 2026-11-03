@@ -1,6 +1,7 @@
 import { Router, type CookieOptions } from "express";
 import type { LogIn } from "../../../application/ports/in/log-in.js";
 import type { OpcionesDeCookie } from "../../../infrastructure/config/env.js";
+import { API_PREFIX } from "./api-prefix.js";
 import { leerCuerpo, leerTexto } from "./cuerpo.js";
 import { sessionToResponse } from "./respuestas.js";
 
@@ -21,13 +22,13 @@ export function authRoutes(logIn: LogIn, cookies: OpcionesDeCookie): Router {
 
     res.cookie("access_token", session.accessToken, {
       ...base,
-      path: "/",
+      path: API_PREFIX,
       maxAge: session.expiresIn * 1000,
     });
-    // Only sent to /auth, where refreshing and logging out will live.
+    // Only sent to /api/auth, where refreshing and logging out will live.
     res.cookie("refresh_token", session.refreshToken, {
       ...base,
-      path: "/auth",
+      path: `${API_PREFIX}/auth`,
       maxAge: REFRESH_TOKEN_MAX_AGE_MS,
     });
     res.json(sessionToResponse(session));

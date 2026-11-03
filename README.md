@@ -64,7 +64,6 @@ Definidas en `.env` (raíz), a partir de `.env.example`:
 | `SUPABASE_SECRET_KEY`      | Clave secreta para la API, se obtiene con `pnpm supabase status`. Nunca va al frontend. |
 | `COOKIE_SAME_SITE`         | `SameSite` de las cookies de sesión: `lax` (por defecto), `strict` o `none`. `none` solo si la web y la API están en sitios distintos. |
 | `COOKIE_SECURE`            | `true` (por defecto) o `false`. Usar `false` solo en desarrollo sobre http. `none` requiere `true`. |
-| `CORS_ORIGINS`             | Orígenes exactos del frontend, separados por coma (p. ej. `https://web.com`). Sin `*`, sin path ni barra final. Vacío: ningún origen externo. |
 
 ### URLs de Supabase: contenedor vs. navegador
 
@@ -86,7 +85,7 @@ La app de React corre en el navegador, así que debe usar `127.0.0.1`, nunca `ho
 | Supabase CLI           | Instalado como devDependency en la raíz; se usa con `pnpm supabase`.                                                                                                                    |
 | Backend                | Express 5 + TypeScript, con Clean Architecture y puertos y adaptadores en las capas externas. Ver [`apps/api/README.md`](apps/api/README.md).                                    |
 | Acceso a Supabase      | Solo desde la API con la clave secreta. Las tablas tienen RLS sin políticas, así que la clave publicable no puede leerlas.                                                     |
-| Sesión                 | Supabase Auth emite los tokens y la API los entrega en cookies `HttpOnly`. El rol del usuario vive en `app_metadata` de Supabase Auth. Ver [`apps/api/README.md`](apps/api/README.md#sesión).          |
+| Sesión                 | Supabase Auth emite los tokens y la API los entrega en cookies `HttpOnly`. El rol del usuario vive en `app_metadata` de Supabase Auth. La web llega a la API por un proxy (Vite en desarrollo, Vercel en producción), así que las cookies son de primera parte y la API no habilita CORS. Ver [`apps/api/README.md`](apps/api/README.md#sesión).          |
 | Supabase en desarrollo | Corre en el Docker del host (`docker-outside-of-docker`), no dentro del contenedor.                                                                                                     |
 | Vite en el contenedor  | Escucha en `127.0.0.1` (`server.host`) para que funcione el reenvío de puertos de VS Code sin exponerlo en el host. Ver [problemas comunes](.devcontainer/README.md#problemas-comunes). |
 
@@ -95,8 +94,9 @@ La app de React corre en el navegador, así que debe usar `127.0.0.1`, nunca `ho
 - [x] Tests unitarios de la API (`node:test`).
 - [ ] Tests e2e con Playwright.
 - [ ] CI en GitHub Actions (build y validación de migraciones).
-- [x] CORS con credenciales en la API, necesario porque la web y la API van en dominios distintos.
+- [x] Montar la API bajo `/api` para el proxy de Vercel.
+- [x] Quitar CORS de la API: la web llega por el proxy de Vite (desarrollo) o de Vercel (producción).
 - [ ] Protección CSRF explícita si se pasa a `COOKIE_SAME_SITE=none`.
 - [ ] Endpoints de refresh y logout, y middleware que valide la cookie de sesión.
 - [x] Eliminar `POST /users`, `POST /companies` y `GET /companies/:id`.
-- [ ] Pasar el formulario de registro del frontend a `POST /companies/register` (hoy llama a `POST /users`).
+- [ ] Pasar el formulario de registro del frontend a `POST /api/companies/register` (hoy llama a `POST /users`).

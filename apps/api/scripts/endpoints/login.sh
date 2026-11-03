@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# POST /auth/login — returns the session and sets the access_token/refresh_token cookies.
+# POST /api/auth/login — returns the session and sets the access_token/refresh_token cookies.
 source "$(dirname "$0")/_common.sh"
 
 : "${EMAIL:?Set EMAIL (e.g. the one printed by register-company.sh)}"

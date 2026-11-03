@@ -55,16 +55,18 @@ Los `import` solo pueden apuntar **hacia adentro**: `infrastructure → adapters
 
 | Método | Ruta            | Body                                                | Respuesta                                     |
 | ------ | --------------- | --------------------------------------------------- | --------------------------------------------- |
-| GET    | `/`             | —                                                   | `{"status":"ok"}`                             |
-| POST   | `/companies/register` | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "organizationType" }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, organizationType, user }` |
-| POST   | `/auth/login`   | `{ "email", "password" }`                           | `200 { user: { id, email, role } }` + cookies de sesión |
+| GET    | `/api`          | —                                                   | `{"status":"ok"}`                             |
+| POST   | `/api/companies/register` | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "organizationType" }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, organizationType, user }` |
+| POST   | `/api/auth/login` | `{ "email", "password" }`                         | `200 { user: { id, email, role } }` + cookies de sesión |
+
+Todas las rutas viven bajo `/api` (`API_PREFIX` en `adapters/in/http/api-prefix.ts`).
 
 Errores: `{ "error": "mensaje" }` con `400` (validación o JSON mal formado), `401` (email o
 contraseña incorrectos), `404` (ruta inexistente) o `409` (email ya registrado).
 
 ### Registro de una company
 
-`POST /companies/register` crea el usuario y la company en una sola request:
+`POST /api/companies/register` crea el usuario y la company en una sola request:
 
 1. Valida el email, la contraseña y todos los datos de la company antes de crear nada.
 2. Crea el usuario en Supabase Auth con `app_metadata.role = "company"`.
@@ -76,7 +78,7 @@ company sin usuario ni vincularla a un usuario existente.
 
 ### Sesión
 
-`POST /auth/login` devuelve el usuario con su `role` (`"company"` o `null` si no tiene uno), para
+`POST /api/auth/login` devuelve el usuario con su `role` (`"company"` o `null` si no tiene uno), para
 que el frontend decida qué mostrar. La autorización la sigue haciendo la API.
 
 Los tokens no van en el body: se guardan en cookies `HttpOnly`, que el JavaScript del frontend no
@@ -84,25 +86,33 @@ puede leer.
 
 | Cookie          | `Path`  | Duración                     |
 | --------------- | ------- | ---------------------------- |
-| `access_token`  | `/`     | La del JWT de Supabase (1 h) |
-| `refresh_token` | `/auth` | 30 días                      |
+| `access_token`  | `/api`      | La del JWT de Supabase (1 h) |
+| `refresh_token` | `/api/auth` | 30 días                      |
 
 `Secure` y `SameSite` se configuran con `COOKIE_SECURE` y `COOKIE_SAME_SITE` (ver el README de la
 raíz). Un email desconocido y una contraseña incorrecta devuelven el mismo `401`, así no se revela
 qué emails están registrados.
 
-### CORS
+### Proxy: la web y la API en el mismo origen
 
-La web y la API van en dominios distintos, así que el navegador solo deja que el frontend lea las
-respuestas si la API lo autoriza. Solo los orígenes de `CORS_ORIGINS` reciben
-`Access-Control-Allow-Origin` (su propio origen, nunca `*`) y `Access-Control-Allow-Credentials`.
-El frontend tiene que hacer los `fetch` con `credentials: "include"` para recibir y mandar las
-cookies.
+La web (Vercel) y la API (EC2) están en sitios distintos. Para que las cookies de sesión sean de
+primera parte, el navegador nunca le habla directo a la API: siempre pide `/api/*` al origen de la
+web y un proxy lo reenvía.
 
-Cualquier origen autorizado puede leer respuestas hechas con la sesión del usuario. Por eso la
-lista se compara por igualdad exacta y al arrancar se rechazan `*`, `null`, comodines, paths y
-barras finales. CORS no frena CSRF: hoy lo cubre `SameSite=Lax`. Con `SameSite=None` hará falta
-una protección propia.
+| Entorno    | Proxy                                         | Destino                  |
+| ---------- | --------------------------------------------- | ------------------------ |
+| Desarrollo | `server.proxy` en `apps/web/vite.config.ts`   | `http://127.0.0.1:3000`  |
+| Producción | `rewrites` en `apps/web/vercel.json`, antes del catch-all de la SPA | La EC2, por HTTPS |
+
+Así:
+
+- `SameSite=Lax` frena el CSRF: un formulario de otro sitio llega sin cookies.
+- Safari y Firefox no bloquean las cookies, porque no son de terceros.
+- La API no habilita CORS: ningún request legítimo es cross-origin, así que ningún otro origen
+  puede leer respuestas hechas con la sesión del usuario.
+- El tramo Vercel → EC2 lleva los tokens, así que la EC2 tiene que servir HTTPS.
+
+Con `SameSite=None` hará falta una protección propia contra CSRF.
 
 ### Login en Supabase
 

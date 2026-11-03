@@ -1,38 +1,26 @@
-import cors from "cors";
-import express, { type Express } from "express";
+import express, { Router, type Express } from "express";
+import { API_PREFIX } from "../../adapters/in/http/api-prefix.js";
 import { manejadorDeErrores } from "../../adapters/in/http/manejador-de-errores.js";
 import { authRoutes } from "../../adapters/in/http/auth-routes.js";
 import { companyRoutes } from "../../adapters/in/http/company-routes.js";
 import type { Config } from "../config/env.js";
 import type { CasosDeUso } from "../container.js";
 
-export type OpcionesHttp = Pick<Config, "cookies" | "corsOrigins">;
+export type OpcionesHttp = Pick<Config, "cookies">;
 
-export function crearApp(casos: CasosDeUso, { cookies, corsOrigins }: OpcionesHttp): Express {
+// No CORS on purpose: the browser always reaches the API on the web's own origin, through the Vite
+// dev proxy or the Vercel rewrite, so cross-origin requests are never needed and stay blocked.
+export function crearApp(casos: CasosDeUso, { cookies }: OpcionesHttp): Express {
   const app = express();
-  // Only origins exactly equal to an allowed one get CORS headers (the request's own Origin is
-  // echoed back). Any other origin gets none at all, so the browser hides the response.
-  // Every response depends on Origin, so caches must never reuse one across origins.
-  app.use((_req, res, next) => {
-    res.vary("Origin");
-    next();
-  });
-  app.use(
-    cors((req, callback) => {
-      const origin = req.header("Origin");
-      callback(null, {
-        origin: origin !== undefined && corsOrigins.includes(origin),
-        credentials: true,
-      });
-    }),
-  );
   app.use(express.json());
 
-  app.get("/", (_req, res) => {
+  const api = Router();
+  api.get("/", (_req, res) => {
     res.json({ status: "ok" });
   });
-  app.use("/auth", authRoutes(casos.logIn, cookies));
-  app.use("/companies", companyRoutes(casos.registerCompany));
+  api.use("/auth", authRoutes(casos.logIn, cookies));
+  api.use("/companies", companyRoutes(casos.registerCompany));
+  app.use(API_PREFIX, api);
 
   app.use((_req, res) => {
     res.status(404).json({ error: "Ruta no encontrada" });

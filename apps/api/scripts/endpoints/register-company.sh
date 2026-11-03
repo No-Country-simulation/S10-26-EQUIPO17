@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# POST /companies/register — creates a company and its user.
+# POST /api/companies/register — creates a company and its user.
 source "$(dirname "$0")/_common.sh"
 
 EMAIL="${EMAIL:-company-$(date +%s)@example.com}"
