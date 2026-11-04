@@ -275,7 +275,7 @@ describe("API HTTP", () => {
       assert.equal(res.status, 201);
       const creado = (await res.json()) as { id: string };
       assert.ok(creado.id);
-      assert.deepEqual(creado, { id: creado.id, companyId, ...proyecto });
+      assert.deepEqual(creado, { id: creado.id, companyId, ...proyecto, status: "pending" });
     });
 
     it("ignora un companyId enviado en el body", async () => {

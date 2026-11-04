@@ -56,6 +56,7 @@ export interface ProjectResponse {
   vertical: string;
   businessSectors: string[];
   projectStage: string;
+  status: string;
 }
 
 export const projectToResponse = (project: Project): ProjectResponse => ({
@@ -66,4 +67,5 @@ export const projectToResponse = (project: Project): ProjectResponse => ({
   vertical: project.vertical.getVertical(),
   businessSectors: project.businessSectors.map((sector) => sector.getSector()),
   projectStage: project.projectStage.getStage(),
+  status: project.status.getStatus(),
 });

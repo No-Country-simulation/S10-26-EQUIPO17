@@ -1,5 +1,6 @@
 // Composition root: el único lugar que conoce las implementaciones concretas
 // y las conecta con los puertos que piden los casos de uso.
+import type { AcceptProject } from "../application/ports/in/accept-project.js";
 import type { Authenticate } from "../application/ports/in/authenticate.js";
 import type { LogIn } from "../application/ports/in/log-in.js";
 import type { RegisterCompany } from "../application/ports/in/register-company.js";
@@ -10,6 +11,7 @@ import type { CompanyRepository } from "../application/ports/out/company-reposit
 import type { ProjectRepository } from "../application/ports/out/project-repository.js";
 import type { UserRepository } from "../application/ports/out/user-repository.js";
 import { AuthenticateUseCase } from "../application/use-cases/authenticate.js";
+import { AcceptProjectUseCase } from "../application/use-cases/accept-project.js";
 import { LogInUseCase } from "../application/use-cases/log-in.js";
 import { RegisterCompanyUseCase } from "../application/use-cases/register-company.js";
 import { UploadProjectUseCase } from "../application/use-cases/upload-project.js";
@@ -40,6 +42,7 @@ export interface CasosDeUso {
   logIn: LogIn;
   authenticate: Authenticate;
   uploadProject: UploadProject;
+  acceptProject: AcceptProject;
 }
 
 export function crearDependencias(config: Config): Dependencias {
@@ -60,18 +63,26 @@ export function crearDependencias(config: Config): Dependencias {
   const supabase = crearClienteSupabase(url, claveSecreta);
   return {
     ids,
-    auth: new SupabaseAuthProvider(supabase, () => crearClienteSupabase(url, claveSecreta)),
+    auth: new SupabaseAuthProvider(supabase, () =>
+      crearClienteSupabase(url, claveSecreta),
+    ),
     users: new SupabaseUserRepository(supabase),
     companies: new SupabaseCompanyRepository(supabase),
     projects: new SupabaseProjectRepository(supabase),
   };
 }
 
-export function crearCasosDeUso({ companies, projects, auth, ids }: Dependencias): CasosDeUso {
+export function crearCasosDeUso({
+  companies,
+  projects,
+  auth,
+  ids,
+}: Dependencias): CasosDeUso {
   return {
     registerCompany: new RegisterCompanyUseCase(auth, companies, ids),
     logIn: new LogInUseCase(auth),
     authenticate: new AuthenticateUseCase(auth),
     uploadProject: new UploadProjectUseCase(companies, projects, ids),
+    acceptProject: new AcceptProjectUseCase(projects),
   };
 }
