@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
 import { roles } from "../data/landingData";
 import { RoleMockup } from "./RoleMockups";
+import { track } from "../../../shared/analytics/analytics";
 
 export function RolesSection() {
   return (
     <section className="mx-auto max-w-[1440px] space-y-8 px-6 py-16 lg:px-8">
       {roles.map((r) => {
         const ctaClass = `btn btn-lg ${r.cta.className}`;
+        const onCtaClick = () => track(r.cta.event, { location: `${r.id}_section` });
         const ctaContent = (
           <>
             <span className="material-symbols-outlined text-[20px]">{r.cta.icon}</span>
@@ -45,9 +47,9 @@ export function RolesSection() {
 
                 <div className="pt-4">
                   {r.cta.href.startsWith("/") ? (
-                    <Link to={r.cta.href} className={ctaClass}>{ctaContent}</Link>
+                    <Link to={r.cta.href} onClick={onCtaClick} className={ctaClass}>{ctaContent}</Link>
                   ) : (
-                    <a href={r.cta.href} className={ctaClass}>{ctaContent}</a>
+                    <a href={r.cta.href} onClick={onCtaClick} className={ctaClass}>{ctaContent}</a>
                   )}
                 </div>
               </div>
