@@ -3,8 +3,11 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { BusinessSector } from "../../../../domain/value-objects/business-sector.js";
 import { Company } from "../../../../domain/entities/company.js";
-import type { Project } from "../../../../domain/entities/project.js";
+import { Project } from "../../../../domain/entities/project.js";
 import { Country } from "../../../../domain/value-objects/country.js";
+import { ProjectStage } from "../../../../domain/value-objects/project-stage.js";
+import { ProjectStatus } from "../../../../domain/value-objects/project-status.js";
+import { Vertical } from "../../../../domain/value-objects/vertical.js";
 import { OrganizationType } from "../../../../domain/value-objects/organization-type.js";
 import { User } from "../../../../domain/entities/user.js";
 import { ConflictoError } from "../../../../domain/errors.js";
@@ -39,6 +42,7 @@ export interface ProjectRow {
   vertical: string;
   business_sectors: string[];
   project_stage: string;
+  status: string;
 }
 
 export const USER_COLUMNS = "id, email";
@@ -83,7 +87,23 @@ export const projectToRow = (project: Project): ProjectRow => ({
   vertical: project.vertical.getVertical(),
   business_sectors: project.businessSectors.map((sector) => sector.getSector()),
   project_stage: project.projectStage.getStage(),
+  status: project.status.getStatus(),
 });
+
+export const PROJECT_COLUMNS =
+  "id, company_id, title, description, vertical, business_sectors, project_stage, status";
+
+export const rowToProject = (row: ProjectRow): Project =>
+  Project.create({
+    id: row.id,
+    companyId: row.company_id,
+    title: row.title,
+    description: row.description,
+    vertical: new Vertical(row.vertical),
+    businessSectors: row.business_sectors.map((sector) => new BusinessSector(sector)),
+    projectStage: new ProjectStage(row.project_stage),
+    status: new ProjectStatus(row.status),
+  });
 
 // Códigos de error de Postgres que el adaptador traduce.
 const VIOLACION_UNICA = "23505";
