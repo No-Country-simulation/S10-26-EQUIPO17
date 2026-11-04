@@ -9,11 +9,11 @@ externas siguen el enfoque **hexagonal (puertos y adaptadores)**.
 src/
 ├── domain/                 1. Entidades: reglas de negocio puras
 │   ├── entities/           User, Company, Project, Country, BusinessSector, OrganizationType, Vertical, ProjectStage
-│   ├── value-objects/      Email, UserRole
+│   ├── value-objects/      Email, UserRole, ProjectStatus
 │   ├── errors.ts           ValidacionError, NoEncontradoError, ConflictoError, CredencialesInvalidasError, NoAutenticadoError, AccesoDenegadoError
 │   └── validaciones.ts
 ├── application/            2. Casos de uso
-│   ├── use-cases/          RegisterCompany, LogIn, Authenticate, UploadProject
+│   ├── use-cases/          RegisterCompany, LogIn, Authenticate, UploadProject, AcceptProject
 │   └── ports/
 │       ├── in/             Lo que la aplicación ofrece (interfaces de los casos de uso)
 │       └── out/            Lo que la aplicación necesita (repositorios, autenticación, ids)
@@ -58,13 +58,14 @@ Los `import` solo pueden apuntar **hacia adentro**: `infrastructure → adapters
 | GET    | `/api`          | —                                                   | `{"status":"ok"}`                             |
 | POST   | `/api/companies/register` | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "organizationType" }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, organizationType, user }` |
 | POST   | `/api/auth/login` | `{ "email", "password" }`                         | `200 { user: { id, email, role } }` + cookies de sesión |
-| POST   | `/api/projects` (requiere sesión de company) | `{ "title", "description", "vertical", "businessSectors", "projectStage" }` | `201 { id, companyId, title, description, vertical, businessSectors, projectStage }` |
+| POST   | `/api/projects` (requiere sesión de company) | `{ "title", "description", "vertical", "businessSectors", "projectStage" }` | `201 { id, companyId, title, description, vertical, businessSectors, projectStage, status }` (`status` empieza en `"pending"`) |
+| PATCH  | `/api/projects/:id/accept` (requiere sesión de admin) | —                  | `200 { id, companyId, title, description, vertical, businessSectors, projectStage, status: "approved" }` |
 
 Todas las rutas viven bajo `/api` (`API_PREFIX` en `adapters/in/http/api-prefix.ts`).
 
 Errores: `{ "error": "mensaje" }` con `400` (validación o JSON mal formado), `401` (email o
 contraseña incorrectos, o sesión faltante o inválida), `403` (sin permiso para la operación),
-`404` (ruta inexistente) o `409` (email ya registrado).
+`404` (ruta o proyecto inexistente) o `409` (email ya registrado, o proyecto ya revisado).
 
 ### Registro de una company
 
@@ -80,8 +81,8 @@ company sin usuario ni vincularla a un usuario existente.
 
 ### Sesión
 
-`POST /api/auth/login` devuelve el usuario con su `role` (`"company"` o `null` si no tiene uno), para
-que el frontend decida qué mostrar. La autorización la sigue haciendo la API.
+`POST /api/auth/login` devuelve el usuario con su `role` (`"company"`, `"admin"` o `null` si no
+tiene uno), para que el frontend decida qué mostrar. La autorización la sigue haciendo la API.
 
 Los tokens no van en el body: se guardan en cookies `HttpOnly`, que el JavaScript del frontend no
 puede leer.
@@ -110,9 +111,28 @@ El middleware solo dice quién llama. Qué puede hacer lo decide cada caso de us
 
 1. `autenticar` valida la sesión.
 2. Si el rol no es `company`, o el usuario no tiene una company, responde `403`.
-3. Crea el proyecto a nombre de la company del usuario y lo guarda.
+3. Crea el proyecto a nombre de la company del usuario, con `status = "pending"`, y lo guarda.
 
 El `companyId` sale de la sesión y nunca del body, así nadie puede publicar por otra company.
+
+### Aceptar un proyecto
+
+Todo proyecto nuevo nace con `status = "pending"` (`pending`, `approved` o `rejected`, en el value
+object `ProjectStatus`). Un administrador lo revisa, y solo un proyecto `pending` se puede revisar.
+
+`PATCH /api/projects/:id/accept` no lleva body:
+
+1. `autenticar` valida la sesión.
+2. Si el rol no es `admin`, responde `403`.
+3. Si el proyecto no existe, responde `404`.
+4. Si el proyecto ya fue aceptado o rechazado, responde `409`.
+5. Pasa el proyecto a `approved`, lo guarda y lo devuelve.
+
+La regla "solo se revisa un proyecto pendiente" vive en la entidad `Project` (`approve()`), no en la
+ruta.
+
+Ningún endpoint crea administradores: un admin es un usuario de Supabase Auth con
+`app_metadata.role = "admin"`, que se asigna a mano desde el panel de Supabase.
 
 ### Proxy: la web y la API en el mismo origen
 
