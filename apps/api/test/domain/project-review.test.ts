@@ -41,4 +41,23 @@ describe("Project review", () => {
       });
     }
   });
+
+  it("reject returns a rejected copy and leaves the original pending", () => {
+    const project = Project.create(props());
+    const rejected = project.reject();
+
+    assert.notEqual(rejected, project);
+    assert.equal(rejected.status.getStatus(), "rejected");
+    assert.equal(project.status.getStatus(), "pending");
+    assert.equal(rejected.id, project.id);
+  });
+
+  it("rejects rejecting a project that was already reviewed", () => {
+    for (const status of [ProjectStatus.APPROVED, ProjectStatus.REJECTED]) {
+      assert.throws(() => Project.create({ ...props(), status }).reject(), {
+        name: ConflictoError.name,
+        message: `Project already reviewed (status: ${status.getStatus()})`,
+      });
+    }
+  });
 });

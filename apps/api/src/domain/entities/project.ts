@@ -50,6 +50,11 @@ export class Project {
     return this.withStatus(ProjectStatus.APPROVED);
   }
 
+  /** Only a pending project can be rejected; returns the rejected copy. */
+  reject(): Project {
+    return this.withStatus(ProjectStatus.REJECTED);
+  }
+
   private withStatus(status: ProjectStatus): Project {
     if (!this.status.isPending()) {
       throw new ConflictoError(
