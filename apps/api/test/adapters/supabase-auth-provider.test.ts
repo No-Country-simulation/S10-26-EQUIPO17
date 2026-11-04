@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { AuthApiError, AuthSessionMissingError, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  AuthApiError,
+  AuthSessionMissingError,
+  type SupabaseClient,
+} from "@supabase/supabase-js";
 import { SupabaseAuthProvider } from "../../src/adapters/out/auth/supabase-auth-provider.js";
 import {
   ConflictoError,
@@ -9,7 +13,10 @@ import {
 } from "../../src/domain/errors.js";
 import { Email } from "../../src/domain/value-objects/email.js";
 
-type CreateUserResult = { data: { user: { id: string } | null }; error: Error | null };
+type CreateUserResult = {
+  data: { user: { id: string } | null };
+  error: Error | null;
+};
 
 function fakeSupabase(
   result: CreateUserResult,
@@ -35,7 +42,11 @@ function fakeSupabase(
 type SignInResult = {
   data: {
     user: { id: string; app_metadata: Record<string, unknown> } | null;
-    session: { access_token: string; refresh_token: string; expires_in: number } | null;
+    session: {
+      access_token: string;
+      refresh_token: string;
+      expires_in: number;
+    } | null;
   };
   error: Error | null;
 };
@@ -72,7 +83,11 @@ function providerWith(
 const signedIn = (role: unknown): SignInResult => ({
   data: {
     user: { id: "auth-id", app_metadata: role === undefined ? {} : { role } },
-    session: { access_token: "access", refresh_token: "refresh", expires_in: 3600 },
+    session: {
+      access_token: "access",
+      refresh_token: "refresh",
+      expires_in: 3600,
+    },
   },
   error: null,
 });
@@ -105,8 +120,11 @@ describe("SupabaseAuthProvider.logIn", () => {
   });
 
   it("returns a null role when app_metadata has none or an unknown one", async () => {
-    for (const role of [undefined, "admin"]) {
-      const auth = providerWith(admin, fakeSessionClients(signedIn(role)).create);
+    for (const role of [undefined, "superuser"]) {
+      const auth = providerWith(
+        admin,
+        fakeSessionClients(signedIn(role)).create,
+      );
       assert.equal((await auth.logIn(email, "clave-segura")).role, null);
     }
   });
@@ -116,11 +134,18 @@ describe("SupabaseAuthProvider.logIn", () => {
       admin,
       fakeSessionClients({
         data: { user: null, session: null },
-        error: new AuthApiError("Invalid login credentials", 400, "invalid_credentials"),
+        error: new AuthApiError(
+          "Invalid login credentials",
+          400,
+          "invalid_credentials",
+        ),
       }).create,
     );
 
-    await assert.rejects(auth.logIn(email, "otra-clave"), CredencialesInvalidasError);
+    await assert.rejects(
+      auth.logIn(email, "otra-clave"),
+      CredencialesInvalidasError,
+    );
   });
 
   it("propagates any other error", async () => {
@@ -142,7 +167,9 @@ describe("SupabaseAuthProvider.logIn", () => {
 
 describe("SupabaseAuthProvider.verifyAccessToken", () => {
   type GetUserResult = {
-    data: { user: { id: string; app_metadata: Record<string, unknown> } | null };
+    data: {
+      user: { id: string; app_metadata: Record<string, unknown> } | null;
+    };
     error: Error | null;
   };
 
@@ -156,13 +183,19 @@ describe("SupabaseAuthProvider.verifyAccessToken", () => {
       },
     }) as unknown as SupabaseClient;
 
-  const rejected = (error: Error): GetUserResult => ({ data: { user: null }, error });
+  const rejected = (error: Error): GetUserResult => ({
+    data: { user: null },
+    error,
+  });
 
   it("asks Supabase about the token and maps the user id and role", async () => {
     const tokens: unknown[] = [];
     const auth = providerWith(
       adminWith(
-        { data: { user: { id: "auth-id", app_metadata: { role: "company" } } }, error: null },
+        {
+          data: { user: { id: "auth-id", app_metadata: { role: "company" } } },
+          error: null,
+        },
         tokens,
       ),
     );
@@ -175,9 +208,12 @@ describe("SupabaseAuthProvider.verifyAccessToken", () => {
   });
 
   it("returns a null role when app_metadata has none or an unknown one", async () => {
-    for (const app_metadata of [{}, { role: "admin" }]) {
+    for (const app_metadata of [{}, { role: "superuser" }]) {
       const auth = providerWith(
-        adminWith({ data: { user: { id: "auth-id", app_metadata } }, error: null }),
+        adminWith({
+          data: { user: { id: "auth-id", app_metadata } },
+          error: null,
+        }),
       );
       assert.equal((await auth.verifyAccessToken("token")).role, null);
     }
@@ -194,18 +230,29 @@ describe("SupabaseAuthProvider.verifyAccessToken", () => {
 
     for (const error of refusals) {
       const auth = providerWith(adminWith(rejected(error)));
-      await assert.rejects(auth.verifyAccessToken("token"), NoAutenticadoError, error.message);
+      await assert.rejects(
+        auth.verifyAccessToken("token"),
+        NoAutenticadoError,
+        error.message,
+      );
     }
   });
 
   it("refuses a token that cannot travel in a header without calling Supabase", async () => {
     const tokens: unknown[] = [];
     const auth = providerWith(
-      adminWith({ data: { user: { id: "auth-id", app_metadata: {} } }, error: null }, tokens),
+      adminWith(
+        { data: { user: { id: "auth-id", app_metadata: {} } }, error: null },
+        tokens,
+      ),
     );
 
     for (const token of ["abc\ndef", "abc\0def", "€", "abc def"]) {
-      await assert.rejects(auth.verifyAccessToken(token), NoAutenticadoError, token);
+      await assert.rejects(
+        auth.verifyAccessToken(token),
+        NoAutenticadoError,
+        token,
+      );
     }
     assert.deepEqual(tokens, []);
   });
@@ -234,7 +281,11 @@ describe("SupabaseAuthProvider", () => {
 
     assert.equal(await auth.register(email, "clave-segura"), "auth-id");
     assert.deepEqual(calls, [
-      { email: "ana@ejemplo.com", password: "clave-segura", email_confirm: true },
+      {
+        email: "ana@ejemplo.com",
+        password: "clave-segura",
+        email_confirm: true,
+      },
     ]);
   });
 
@@ -296,10 +347,13 @@ describe("SupabaseAuthProvider", () => {
       }),
     );
 
-    await assert.rejects(auth.register(email, "clave-segura"), (error: Error) => {
-      assert.ok(!(error instanceof ConflictoError));
-      assert.match(error.message, /boom/);
-      return true;
-    });
+    await assert.rejects(
+      auth.register(email, "clave-segura"),
+      (error: Error) => {
+        assert.ok(!(error instanceof ConflictoError));
+        assert.match(error.message, /boom/);
+        return true;
+      },
+    );
   });
 });
