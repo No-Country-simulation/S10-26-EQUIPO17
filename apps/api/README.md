@@ -13,7 +13,7 @@ src/
 │   ├── errors.ts           ValidacionError, NoEncontradoError, ConflictoError, CredencialesInvalidasError, NoAutenticadoError, AccesoDenegadoError
 │   └── validaciones.ts
 ├── application/            2. Casos de uso
-│   ├── use-cases/          RegisterCompany, LogIn, Authenticate, UploadProject, AcceptProject
+│   ├── use-cases/          RegisterCompany, LogIn, Authenticate, UploadProject, AcceptProject, RejectProject
 │   └── ports/
 │       ├── in/             Lo que la aplicación ofrece (interfaces de los casos de uso)
 │       └── out/            Lo que la aplicación necesita (repositorios, autenticación, ids)
@@ -53,13 +53,14 @@ Los `import` solo pueden apuntar **hacia adentro**: `infrastructure → adapters
 
 ## Endpoints
 
-| Método | Ruta            | Body                                                | Respuesta                                     |
-| ------ | --------------- | --------------------------------------------------- | --------------------------------------------- |
-| GET    | `/api`          | —                                                   | `{"status":"ok"}`                             |
-| POST   | `/api/companies/register` | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "organizationType" }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, organizationType, user }` |
-| POST   | `/api/auth/login` | `{ "email", "password" }`                         | `200 { user: { id, email, role } }` + cookies de sesión |
-| POST   | `/api/projects` (requiere sesión de company) | `{ "title", "description", "vertical", "businessSectors", "projectStage" }` | `201 { id, companyId, title, description, vertical, businessSectors, projectStage, status }` (`status` empieza en `"pending"`) |
-| PATCH  | `/api/projects/:id/accept` (requiere sesión de admin) | —                  | `200 { id, companyId, title, description, vertical, businessSectors, projectStage, status: "approved" }` |
+| Método | Ruta                                                  | Body                                                                                                                              | Respuesta                                                                                                                      |
+| ------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api`                                                | —                                                                                                                                 | `{"status":"ok"}`                                                                                                              |
+| POST   | `/api/companies/register`                             | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "organizationType" }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, organizationType, user }`                   |
+| POST   | `/api/auth/login`                                     | `{ "email", "password" }`                                                                                                         | `200 { user: { id, email, role } }` + cookies de sesión                                                                        |
+| POST   | `/api/projects` (requiere sesión de company)          | `{ "title", "description", "vertical", "businessSectors", "projectStage" }`                                                       | `201 { id, companyId, title, description, vertical, businessSectors, projectStage, status }` (`status` empieza en `"pending"`) |
+| PATCH  | `/api/projects/:id/accept` (requiere sesión de admin) | —                                                                                                                                 | `200 { id, companyId, title, description, vertical, businessSectors, projectStage, status: "approved" }`                       |
+| PATCH  | `/api/projects/:id/reject` (requiere sesión de admin) | —                                                                                                                                 | `200 { id, companyId, title, description, vertical, businessSectors, projectStage, status: "rejected" }`                       |
 
 Todas las rutas viven bajo `/api` (`API_PREFIX` en `adapters/in/http/api-prefix.ts`).
 
@@ -87,8 +88,8 @@ tiene uno), para que el frontend decida qué mostrar. La autorización la sigue 
 Los tokens no van en el body: se guardan en cookies `HttpOnly`, que el JavaScript del frontend no
 puede leer.
 
-| Cookie          | `Path`  | Duración                     |
-| --------------- | ------- | ---------------------------- |
+| Cookie          | `Path`      | Duración                     |
+| --------------- | ----------- | ---------------------------- |
 | `access_token`  | `/api`      | La del JWT de Supabase (1 h) |
 | `refresh_token` | `/api/auth` | 30 días                      |
 
@@ -131,6 +132,20 @@ object `ProjectStatus`). Un administrador lo revisa, y solo un proyecto `pending
 La regla "solo se revisa un proyecto pendiente" vive en la entidad `Project` (`approve()`), no en la
 ruta.
 
+### Negar un proyecto
+
+`PATCH /api/projects/:id/reject` funciona igual que aceptar, pero deja el proyecto en
+`status = "rejected"`, para no admitir proyectos que no cumplan los criterios de No Country:
+
+1. `autenticar` valida la sesión.
+2. Si el rol no es `admin`, responde `403`.
+3. Si el proyecto no existe, responde `404`.
+4. Si el proyecto ya fue aceptado o rechazado, responde `409`.
+5. Pasa el proyecto a `rejected`, lo guarda y lo devuelve.
+
+Un proyecto revisado no se puede revisar de nuevo: uno aceptado no se puede negar, ni uno negado
+se puede aceptar.
+
 Ningún endpoint crea administradores: un admin es un usuario de Supabase Auth con
 `app_metadata.role = "admin"`, que se asigna a mano desde el panel de Supabase.
 
@@ -140,10 +155,10 @@ La web (Vercel) y la API (EC2) están en sitios distintos. Para que las cookies 
 primera parte, el navegador nunca le habla directo a la API: siempre pide `/api/*` al origen de la
 web y un proxy lo reenvía.
 
-| Entorno    | Proxy                                         | Destino                  |
-| ---------- | --------------------------------------------- | ------------------------ |
-| Desarrollo | `server.proxy` en `apps/web/vite.config.ts`   | `http://127.0.0.1:3000`  |
-| Producción | `rewrites` en `apps/web/vercel.json`, antes del catch-all de la SPA | La EC2, por HTTPS |
+| Entorno    | Proxy                                                               | Destino                 |
+| ---------- | ------------------------------------------------------------------- | ----------------------- |
+| Desarrollo | `server.proxy` en `apps/web/vite.config.ts`                         | `http://127.0.0.1:3000` |
+| Producción | `rewrites` en `apps/web/vercel.json`, antes del catch-all de la SPA | La EC2, por HTTPS       |
 
 Así:
 
@@ -172,10 +187,10 @@ Supabase, por ejemplo para trabajar en el frontend. Los datos se pierden al rein
 
 ## Scripts
 
-| Comando                        | Acción                                         |
-| ------------------------------ | ---------------------------------------------- |
-| `pnpm --filter api dev`        | `tsx watch` con el `.env` de la raíz.          |
-| `pnpm --filter api build`      | Compila a `dist/`.                             |
-| `pnpm --filter api start`      | Ejecuta `dist/index.js`.                       |
-| `pnpm --filter api typecheck`  | `tsc` sin emitir (incluye los tests).          |
-| `pnpm --filter api test`       | Tests con `node:test`.                         |
+| Comando                       | Acción                                |
+| ----------------------------- | ------------------------------------- |
+| `pnpm --filter api dev`       | `tsx watch` con el `.env` de la raíz. |
+| `pnpm --filter api build`     | Compila a `dist/`.                    |
+| `pnpm --filter api start`     | Ejecuta `dist/index.js`.              |
+| `pnpm --filter api typecheck` | `tsc` sin emitir (incluye los tests). |
+| `pnpm --filter api test`      | Tests con `node:test`.                |
