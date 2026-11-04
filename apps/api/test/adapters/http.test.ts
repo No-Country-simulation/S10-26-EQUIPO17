@@ -443,4 +443,112 @@ describe("API HTTP", () => {
       });
     });
   });
+
+  describe("PATCH /projects/:id/reject", () => {
+    const clave = "clave-segura";
+    const proyecto = {
+      title: "Marketplace",
+      description: "A platform to connect buyers and sellers",
+      vertical: "E-commerce",
+      businessSectors: ["Product", "IT"],
+      projectStage: "MVP",
+    };
+    let cookieCompany: string;
+    let cookieAdmin: string;
+
+    const iniciarSesion = async (email: string) => {
+      const res = await post("/auth/login", JSON.stringify({ email, password: clave }));
+      const [access = ""] = res.headers.getSetCookie();
+      return access.split(";")[0] ?? "";
+    };
+
+    /** Uploads a fresh pending project as the company and returns its id. */
+    const subirProyecto = async () => {
+      const res = await fetch(`${base}/projects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Cookie: cookieCompany },
+        body: JSON.stringify(proyecto),
+      });
+      return ((await res.json()) as { id: string }).id;
+    };
+
+    const revisar = (accion: "accept" | "reject", id: string, cookies?: string) =>
+      fetch(`${base}/projects/${id}/${accion}`, {
+        method: "PATCH",
+        headers: cookies ? { Cookie: cookies } : {},
+      });
+
+    before(async () => {
+      const emailCompany = "negar-company@ejemplo.com";
+      await post(
+        "/companies/register",
+        JSON.stringify({
+          email: emailCompany,
+          password: clave,
+          firstName: "Ana",
+          lastName: "García",
+          jobPosition: "CTO",
+          companyName: "Acme",
+          country: "Argentina",
+          businessSector: "IT",
+          organizationType: "Educational Institute",
+        }),
+      );
+      cookieCompany = await iniciarSesion(emailCompany);
+
+      const emailAdmin = "negar-admin@ejemplo.com";
+      await dependencias.auth.register(Email.create(emailAdmin), clave, "admin");
+      cookieAdmin = await iniciarSesion(emailAdmin);
+    });
+
+    it("lets an admin reject a pending project", async () => {
+      const id = await subirProyecto();
+
+      const res = await revisar("reject", id, cookieAdmin);
+
+      assert.equal(res.status, 200);
+      const negado = (await res.json()) as { id: string; status: string };
+      assert.equal(negado.id, id);
+      assert.equal(negado.status, "rejected");
+    });
+
+    it("responde 401 sin la cookie de sesión", async () => {
+      const res = await revisar("reject", await subirProyecto());
+      assert.equal(res.status, 401);
+      assert.deepEqual(await res.json(), { error: "Authentication required" });
+    });
+
+    it("responde 403 si el usuario no es admin", async () => {
+      const res = await revisar("reject", await subirProyecto(), cookieCompany);
+      assert.equal(res.status, 403);
+      assert.deepEqual(await res.json(), { error: "Only admins can reject projects" });
+    });
+
+    it("responde 404 si el proyecto no existe", async () => {
+      const res = await revisar("reject", "no-existe", cookieAdmin);
+      assert.equal(res.status, 404);
+      assert.deepEqual(await res.json(), { error: "Project not found" });
+    });
+
+    it("responde 409 si el proyecto ya fue negado", async () => {
+      const id = await subirProyecto();
+      await revisar("reject", id, cookieAdmin);
+
+      const res = await revisar("reject", id, cookieAdmin);
+
+      assert.equal(res.status, 409);
+      assert.deepEqual(await res.json(), {
+        error: "Project already reviewed (status: rejected)",
+      });
+    });
+
+    it("responde 409 si se intenta aceptar un proyecto ya negado", async () => {
+      const id = await subirProyecto();
+      await revisar("reject", id, cookieAdmin);
+
+      const res = await revisar("accept", id, cookieAdmin);
+
+      assert.equal(res.status, 409);
+    });
+  });
 });
