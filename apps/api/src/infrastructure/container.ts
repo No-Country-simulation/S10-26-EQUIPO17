@@ -4,6 +4,7 @@ import type { AcceptProject } from "../application/ports/in/accept-project.js";
 import type { Authenticate } from "../application/ports/in/authenticate.js";
 import type { LogIn } from "../application/ports/in/log-in.js";
 import type { RegisterCompany } from "../application/ports/in/register-company.js";
+import type { RejectProject } from "../application/ports/in/reject-project.js";
 import type { UploadProject } from "../application/ports/in/upload-project.js";
 import type { GeneradorDeIds } from "../application/ports/out/generador-de-ids.js";
 import type { AuthProvider } from "../application/ports/out/auth-provider.js";
@@ -14,6 +15,7 @@ import { AuthenticateUseCase } from "../application/use-cases/authenticate.js";
 import { AcceptProjectUseCase } from "../application/use-cases/accept-project.js";
 import { LogInUseCase } from "../application/use-cases/log-in.js";
 import { RegisterCompanyUseCase } from "../application/use-cases/register-company.js";
+import { RejectProjectUseCase } from "../application/use-cases/reject-project.js";
 import { UploadProjectUseCase } from "../application/use-cases/upload-project.js";
 import { InMemoryAuthProvider } from "../adapters/out/auth/in-memory-auth-provider.js";
 import { SupabaseAuthProvider } from "../adapters/out/auth/supabase-auth-provider.js";
@@ -43,6 +45,7 @@ export interface CasosDeUso {
   authenticate: Authenticate;
   uploadProject: UploadProject;
   acceptProject: AcceptProject;
+  rejectProject: RejectProject;
 }
 
 export function crearDependencias(config: Config): Dependencias {
@@ -84,5 +87,6 @@ export function crearCasosDeUso({
     authenticate: new AuthenticateUseCase(auth),
     uploadProject: new UploadProjectUseCase(companies, projects, ids),
     acceptProject: new AcceptProjectUseCase(projects),
+    rejectProject: new RejectProjectUseCase(projects),
   };
 }

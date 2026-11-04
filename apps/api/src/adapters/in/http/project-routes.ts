@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { AcceptProject } from "../../../application/ports/in/accept-project.js";
 import type { Authenticate } from "../../../application/ports/in/authenticate.js";
+import type { RejectProject } from "../../../application/ports/in/reject-project.js";
 import type { UploadProject } from "../../../application/ports/in/upload-project.js";
 import { ValidacionError } from "../../../domain/errors.js";
 import { autenticar, usuarioAutenticado } from "./autenticar.js";
@@ -18,6 +19,7 @@ function leerId(valor: unknown): string {
 export function projectRoutes(
   uploadProject: UploadProject,
   acceptProject: AcceptProject,
+  rejectProject: RejectProject,
   authenticate: Authenticate,
 ): Router {
   const router = Router();
@@ -36,6 +38,11 @@ export function projectRoutes(
 
   router.patch("/:id/accept", autenticar(authenticate), async (req, res) => {
     const project = await acceptProject.execute(usuarioAutenticado(res), leerId(req.params.id));
+    res.json(projectToResponse(project));
+  });
+
+  router.patch("/:id/reject", autenticar(authenticate), async (req, res) => {
+    const project = await rejectProject.execute(usuarioAutenticado(res), leerId(req.params.id));
     res.json(projectToResponse(project));
   });
 

@@ -28,7 +28,12 @@ export function crearApp(
   api.use("/companies", companyRoutes(casos.registerCompany));
   api.use(
     "/projects",
-    projectRoutes(casos.uploadProject, casos.acceptProject, casos.authenticate),
+    projectRoutes(
+      casos.uploadProject,
+      casos.acceptProject,
+      casos.rejectProject,
+      casos.authenticate,
+    ),
   );
   app.use(API_PREFIX, api);
 
