@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { heroTags } from "../data/landingData";
 import { LiveDashboard } from "./LiveDashboard";
+import { track } from "../../../shared/analytics/analytics";
 
 export function HeroSection() {
   return (
@@ -25,7 +26,10 @@ export function HeroSection() {
             colaboran y crean proyectos reales.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link to="/cargar-desafio" className="btn btn-lg bg-brand-gradient border-0 text-white shadow-[0_0_25px_rgba(255,0,148,0.4)]">
+            <Link
+              to="/cargar-desafio"
+              onClick={() => track("clicked_validate_project", { location: "hero_section" })}
+              className="btn btn-lg bg-brand-gradient border-0 text-white shadow-[0_0_25px_rgba(255,0,148,0.4)]">
               <span className="material-symbols-outlined">rocket_launch</span> Validar mi proyecto o idea
             </Link>
             <a href="#public-dashboard" className="btn btn-lg border-neutral bg-base-300 hover:border-secondary">

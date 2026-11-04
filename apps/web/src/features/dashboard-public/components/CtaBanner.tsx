@@ -1,3 +1,5 @@
+import { track } from "../../../shared/analytics/analytics";
+
 export function CtaBanner() {
   return (
     <section className="relative w-full overflow-hidden bg-base-100 py-20">
@@ -26,6 +28,7 @@ export function CtaBanner() {
             </a>
             <a
               href="#empresas"
+              onClick={() => track("clicked_share_project", { location: "cta_banner" })}
               className="btn btn-lg gap-2 border border-secondary/40 bg-secondary/10 text-base font-bold text-secondary shadow-[0_0_24px_rgba(2,190,239,0.16)] transition-all hover:border-secondary hover:bg-secondary/20 active:scale-[0.98]"
             >
               <span className="material-symbols-outlined text-[22px]">business_center</span>
@@ -33,6 +36,7 @@ export function CtaBanner() {
             </a>
             <a
               href="#instituciones"
+              onClick={() => track("clicked_institution", { location: "cta_banner" })}
               className="btn btn-lg gap-2 border border-accent/40 bg-accent/10 text-base font-bold text-indigo-300 shadow-[0_0_24px_rgba(99,102,241,0.16)] transition-all hover:border-accent hover:bg-accent/20 active:scale-[0.98]"
             >
               <span className="material-symbols-outlined text-[22px]">school</span>

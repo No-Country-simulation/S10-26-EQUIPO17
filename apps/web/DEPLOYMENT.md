@@ -17,6 +17,8 @@ Debido a que el frontend se encuentra dentro de la carpeta `/apps/web` del monor
 
 ## 🔐 Variables de Entorno (Environment Variables)
 
+**PostHog (analítica):** define en Vercel (Preview y Production) `VITE_POSTHOG_KEY` (clave pública `phc_...` del proyecto) y `VITE_POSTHOG_HOST` (host de la región del proyecto, p. ej. `https://us.i.posthog.com`). Sin `VITE_POSTHOG_KEY` el tracking queda desactivado. En local van en `apps/web/.env` (ver `apps/web/.env.example`). Las variables `VITE_*` se incrustan en el build, así que hay que redeployar tras cambiarlas.
+
 El cliente HTTP (`src/shared/api/apiClient.ts`) llama por defecto a `/api` en el mismo origen de la web, así que **no hace falta definir `VITE_API_URL`** en Vercel. Si se define, tiene que ser `/api`: una URL absoluta a la EC2 haría que las cookies de sesión pasen a ser de terceros (ver la sección siguiente).
 
 ---

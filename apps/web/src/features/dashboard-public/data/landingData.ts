@@ -56,6 +56,8 @@ export const simulationPillars = [
   },
 ];
 
+import type { AnalyticsEvent } from "../../../shared/analytics/analytics";
+
 export type RoleId = "empresas" | "instituciones" | "talento";
 
 export interface Role {
@@ -67,7 +69,7 @@ export interface Role {
   title: string;
   description: string;
   features: { icon: string; title: string; text: string }[];
-  cta: { icon: string; label: string; href: string; className: string };
+  cta: { icon: string; label: string; href: string; className: string; event: AnalyticsEvent };
   mockupFirst?: boolean;
 }
 
@@ -90,6 +92,7 @@ export const roles: Role[] = [
       label: "Publicar un Desafío (2 min)",
       href: "/cargar-desafio",
       className: "bg-brand-gradient border-0 text-white shadow-lg",
+      event: "clicked_publish_challenge",
     },
   },
   {
@@ -110,6 +113,7 @@ export const roles: Role[] = [
       label: "Agendar Demo Institucional",
       href: "#",
       className: "border-neutral bg-base-300 hover:border-secondary hover:text-white",
+      event: "clicked_schedule_demo",
     },
     mockupFirst: true,
   },
@@ -131,6 +135,7 @@ export const roles: Role[] = [
       label: "Postular a la próxima generación (Gratis)",
       href: "#",
       className: "bg-brand-gradient border-0 text-white shadow-[0_0_20px_rgba(255,0,148,0.4)]",
+      event: "clicked_apply_next_generation",
     },
   },
 ];
