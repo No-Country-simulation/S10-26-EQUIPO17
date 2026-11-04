@@ -9,7 +9,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
     this.projects.set(project.id, project);
   }
 
-  /** Not part of the port: lets tests check what was saved. */
+/** Same lookup the use cases use to find a project by id. */
   async findById(id: string): Promise<Project | null> {
     return this.projects.get(id) ?? null;
   }
