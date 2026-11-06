@@ -48,13 +48,13 @@ export function Navbar() {
             Iniciar sesión
           </Link>
           <Link
-            to="/cargar-desafio"
+            to="/subir-proyecto"
             onClick={() =>
               track("clicked_upload_project", { location: "navbar" })
             }
             className="btn btn-sm bg-brand-gradient border-0 text-white shadow-[0_0_20px_rgba(255,0,148,0.35)]"
           >
-            Subir proyecto
+            Subir Proyecto
           </Link>
         </div>
       </div>

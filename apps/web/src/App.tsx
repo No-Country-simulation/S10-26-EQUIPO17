@@ -2,12 +2,17 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { PublicDashboard } from "./features/dashboard-public/views/PublicDashboard";
 import { NewChallengeForm } from "./features/project-submission/views/NewChallengeForm";
+import { UploadChallengePage } from "./features/project-submission/views/UploadChallengePage";
 import { ProjectTracking } from "./features/tracking-project/views/ProjectTracking";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <PublicDashboard />, // Pieza 1: Dashboard público
+  },
+  {
+    path: "/subir-proyecto",
+    element: <UploadChallengePage />,
   },
   {
     path: "/cargar-desafio",
