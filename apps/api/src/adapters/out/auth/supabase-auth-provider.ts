@@ -7,6 +7,7 @@ import type {
   AuthenticatedUser,
   AuthProvider,
   AuthSession,
+  RefreshedAuthSession,
 } from "../../../application/ports/out/auth-provider.js";
 import {
   ConflictoError,
@@ -19,12 +20,24 @@ import { isUserRole, type UserRole } from "../../../domain/value-objects/user-ro
 /** Printable ASCII without spaces: anything else cannot be sent in the Authorization header. */
 const HEADER_SAFE_TOKEN = /^[\x21-\x7e]+$/;
 
+/** Codes Supabase answers with when the refresh token or its session can no longer be used. */
+const REFRESH_REFUSAL_CODES: ReadonlySet<string | undefined> = new Set([
+  // The token is the only input, so this means its format is impossible (a tampered cookie).
+  "validation_failed",
+  "refresh_token_not_found",
+  "refresh_token_already_used",
+  "session_not_found",
+  "session_expired",
+  "user_not_found",
+  "user_banned",
+]);
+
 // The on_auth_user_created trigger (see supabase/migrations) copies the new
 // auth.users row into public.users, so this adapter only talks to Auth.
 export class SupabaseAuthProvider implements AuthProvider {
   /**
    * @param supabase shared admin client, used for user management.
-   * @param createSessionClient returns a new client for each login: signing in stores the
+   * @param createSessionClient returns a new client for each login or refresh: both store the
    *   session in the client and later requests run as that user, so it must never be shared.
    */
   constructor(
@@ -48,6 +61,33 @@ export class SupabaseAuthProvider implements AuthProvider {
     const role = data.user.app_metadata.role;
     return {
       userId: data.user.id,
+      role: isUserRole(role) ? role : null,
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+      expiresIn: data.session.expires_in,
+    };
+  }
+
+  async refreshSession(refreshToken: string): Promise<RefreshedAuthSession> {
+    const { data, error } = await this.createSessionClient().auth.refreshSession({
+      refresh_token: refreshToken,
+    });
+    // Only a refusal means "not logged in"; an outage must not end the user's session.
+    if (
+      isAuthSessionMissingError(error) ||
+      (isAuthApiError(error) && REFRESH_REFUSAL_CODES.has(error.code))
+    ) {
+      throw new NoAutenticadoError();
+    }
+    if (error || !data.user?.email || !data.session) {
+      throw new Error(`Supabase Auth: ${error?.message ?? "incomplete session returned"}`, {
+        cause: error,
+      });
+    }
+    const role = data.user.app_metadata.role;
+    return {
+      userId: data.user.id,
+      email: data.user.email,
       role: isUserRole(role) ? role : null,
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
