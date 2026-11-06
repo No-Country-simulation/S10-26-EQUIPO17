@@ -99,6 +99,7 @@ La app de React corre en el navegador, así que debe usar `127.0.0.1`, nunca `ho
 - [ ] Protección CSRF explícita si se pasa a `COOKIE_SAME_SITE=none`.
 - [x] Middleware que valide la cookie de sesión.
 - [x] `POST /api/projects`: solo una company puede subir un proyecto (JSON, sin archivos adjuntos).
-- [ ] Endpoints de refresh y logout.
+- [x] Endpoint de refresh.
+- [ ] Endpoint de logout.
 - [x] Eliminar `POST /users`, `POST /companies` y `GET /companies/:id`.
 - [ ] Pasar el formulario de registro del frontend a `POST /api/companies/register` (hoy llama a `POST /users`).

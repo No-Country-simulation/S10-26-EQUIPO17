@@ -2,6 +2,7 @@ import type {
   AuthenticatedUser,
   AuthProvider,
   AuthSession,
+  RefreshedAuthSession,
 } from "../../../application/ports/out/auth-provider.js";
 import type { GeneradorDeIds } from "../../../application/ports/out/generador-de-ids.js";
 import { User } from "../../../domain/entities/user.js";
@@ -27,6 +28,8 @@ export class InMemoryAuthProvider implements AuthProvider {
   private readonly passwords = new Map<string, string>();
   /** Access token -> user id. */
   private readonly accessTokens = new Map<string, string>();
+  /** Refresh token -> user id. */
+  private readonly refreshTokens = new Map<string, string>();
 
   constructor(
     private readonly users: InMemoryUserRepository,
@@ -50,6 +53,9 @@ export class InMemoryAuthProvider implements AuthProvider {
     for (const [token, userId] of this.accessTokens) {
       if (userId === id) this.accessTokens.delete(token);
     }
+    for (const [token, userId] of this.refreshTokens) {
+      if (userId === id) this.refreshTokens.delete(token);
+    }
     await this.users.delete(id);
   }
 
@@ -58,21 +64,35 @@ export class InMemoryAuthProvider implements AuthProvider {
     if (!user || this.passwords.get(user.id) !== password) {
       throw new CredencialesInvalidasError();
     }
-    const accessToken = this.ids.generar();
-    this.accessTokens.set(accessToken, user.id);
-    return {
-      userId: user.id,
-      role: this.roleOf(user.id),
-      accessToken,
-      refreshToken: this.ids.generar(),
-      expiresIn: ACCESS_TOKEN_SECONDS,
-    };
+    return this.issueSession(user.id);
+  }
+
+  async refreshSession(refreshToken: string): Promise<RefreshedAuthSession> {
+    const userId = this.refreshTokens.get(refreshToken);
+    const user = userId ? await this.users.findById(userId) : null;
+    if (!user) throw new NoAutenticadoError();
+    this.refreshTokens.delete(refreshToken);
+    return { ...this.issueSession(user.id), email: user.email.value };
   }
 
   async verifyAccessToken(accessToken: string): Promise<AuthenticatedUser> {
     const userId = this.accessTokens.get(accessToken);
     if (!userId) throw new NoAutenticadoError();
     return { userId, role: this.roleOf(userId) };
+  }
+
+  private issueSession(userId: string): AuthSession {
+    const accessToken = this.ids.generar();
+    const refreshToken = this.ids.generar();
+    this.accessTokens.set(accessToken, userId);
+    this.refreshTokens.set(refreshToken, userId);
+    return {
+      userId,
+      role: this.roleOf(userId),
+      accessToken,
+      refreshToken,
+      expiresIn: ACCESS_TOKEN_SECONDS,
+    };
   }
 
   /** Not part of the port: lets tests check the role a user was registered with. */
