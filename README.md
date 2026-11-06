@@ -97,6 +97,8 @@ La app de React corre en el navegador, así que debe usar `127.0.0.1`, nunca `ho
 - [x] Montar la API bajo `/api` para el proxy de Vercel.
 - [x] Quitar CORS de la API: la web llega por el proxy de Vite (desarrollo) o de Vercel (producción).
 - [ ] Protección CSRF explícita si se pasa a `COOKIE_SAME_SITE=none`.
-- [ ] Endpoints de refresh y logout, y middleware que valide la cookie de sesión.
+- [x] Middleware que valide la cookie de sesión.
+- [x] `POST /api/projects`: solo una company puede subir un proyecto (JSON, sin archivos adjuntos).
+- [ ] Endpoints de refresh y logout.
 - [x] Eliminar `POST /users`, `POST /companies` y `GET /companies/:id`.
 - [ ] Pasar el formulario de registro del frontend a `POST /api/companies/register` (hoy llama a `POST /users`).

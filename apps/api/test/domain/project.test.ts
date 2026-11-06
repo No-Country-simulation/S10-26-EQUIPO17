@@ -8,6 +8,7 @@ import { Vertical } from "../../src/domain/value-objects/vertical.js";
 
 const props = (): ProjectProps => ({
   id: "project-1",
+  companyId: "company-1",
   title: " Marketplace ",
   description: " A platform to connect buyers and sellers ",
   vertical: new Vertical("E-commerce"),
@@ -20,6 +21,7 @@ describe("Project", () => {
     const project = Project.create(props());
 
     assert.equal(project.id, "project-1");
+    assert.equal(project.companyId, "company-1");
     assert.equal(project.title, "Marketplace");
     assert.equal(project.description, "A platform to connect buyers and sellers");
     assert.equal(project.vertical.getVertical(), "E-commerce");
@@ -30,8 +32,8 @@ describe("Project", () => {
     assert.equal(project.projectStage.getStage(), "MVP");
   });
 
-  it("rejects an empty id, title or description", () => {
-    for (const field of ["id", "title", "description"] as const) {
+  it("rejects an empty id, companyId, title or description", () => {
+    for (const field of ["id", "companyId", "title", "description"] as const) {
       assert.throws(() => Project.create({ ...props(), [field]: "  " }), ValidacionError);
     }
   });

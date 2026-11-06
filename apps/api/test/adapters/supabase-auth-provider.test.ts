@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { AuthApiError, type SupabaseClient } from "@supabase/supabase-js";
+import { AuthApiError, AuthSessionMissingError, type SupabaseClient } from "@supabase/supabase-js";
 import { SupabaseAuthProvider } from "../../src/adapters/out/auth/supabase-auth-provider.js";
-import { ConflictoError, CredencialesInvalidasError } from "../../src/domain/errors.js";
+import {
+  ConflictoError,
+  CredencialesInvalidasError,
+  NoAutenticadoError,
+} from "../../src/domain/errors.js";
 import { Email } from "../../src/domain/value-objects/email.js";
 
 type CreateUserResult = { data: { user: { id: string } | null }; error: Error | null };
@@ -130,6 +134,89 @@ describe("SupabaseAuthProvider.logIn", () => {
 
     await assert.rejects(auth.logIn(email, "clave-segura"), (error: Error) => {
       assert.ok(!(error instanceof CredencialesInvalidasError));
+      assert.match(error.message, /boom/);
+      return true;
+    });
+  });
+});
+
+describe("SupabaseAuthProvider.verifyAccessToken", () => {
+  type GetUserResult = {
+    data: { user: { id: string; app_metadata: Record<string, unknown> } | null };
+    error: Error | null;
+  };
+
+  const adminWith = (result: GetUserResult, tokens: unknown[] = []) =>
+    ({
+      auth: {
+        getUser: async (token: unknown) => {
+          tokens.push(token);
+          return result;
+        },
+      },
+    }) as unknown as SupabaseClient;
+
+  const rejected = (error: Error): GetUserResult => ({ data: { user: null }, error });
+
+  it("asks Supabase about the token and maps the user id and role", async () => {
+    const tokens: unknown[] = [];
+    const auth = providerWith(
+      adminWith(
+        { data: { user: { id: "auth-id", app_metadata: { role: "company" } } }, error: null },
+        tokens,
+      ),
+    );
+
+    assert.deepEqual(await auth.verifyAccessToken("token"), {
+      userId: "auth-id",
+      role: "company",
+    });
+    assert.deepEqual(tokens, ["token"]);
+  });
+
+  it("returns a null role when app_metadata has none or an unknown one", async () => {
+    for (const app_metadata of [{}, { role: "admin" }]) {
+      const auth = providerWith(
+        adminWith({ data: { user: { id: "auth-id", app_metadata } }, error: null }),
+      );
+      assert.equal((await auth.verifyAccessToken("token")).role, null);
+    }
+  });
+
+  it("translates a token Supabase refuses", async () => {
+    const refusals = [
+      new AuthApiError("invalid JWT", 403, "bad_jwt"),
+      // What auth-js returns for session_not_found, for example after a logout.
+      new AuthSessionMissingError(),
+      new AuthApiError("user gone", 403, "user_not_found"),
+      new AuthApiError("unauthorized", 401, "no_authorization"),
+    ];
+
+    for (const error of refusals) {
+      const auth = providerWith(adminWith(rejected(error)));
+      await assert.rejects(auth.verifyAccessToken("token"), NoAutenticadoError, error.message);
+    }
+  });
+
+  it("refuses a token that cannot travel in a header without calling Supabase", async () => {
+    const tokens: unknown[] = [];
+    const auth = providerWith(
+      adminWith({ data: { user: { id: "auth-id", app_metadata: {} } }, error: null }, tokens),
+    );
+
+    for (const token of ["abc\ndef", "abc\0def", "€", "abc def"]) {
+      await assert.rejects(auth.verifyAccessToken(token), NoAutenticadoError, token);
+    }
+    assert.deepEqual(tokens, []);
+  });
+
+  it("propagates an outage instead of reporting the user as logged out", async () => {
+    const auth = providerWith(
+      adminWith(rejected(new AuthApiError("boom", 500, "unexpected_failure"))),
+    );
+
+    await assert.rejects(auth.verifyAccessToken("token"), (error: Error) => {
+      assert.ok(!(error instanceof NoAutenticadoError));
       assert.match(error.message, /boom/);
       return true;
     });

@@ -12,6 +12,13 @@ export interface AuthSession {
   expiresIn: number;
 }
 
+/** Who an access token belongs to. */
+export interface AuthenticatedUser {
+  userId: string;
+  /** Null when the user has no role yet, or one this API does not know. */
+  role: UserRole | null;
+}
+
 /** Identity service that owns credentials. The API never stores passwords. */
 export interface AuthProvider {
   /** Creates an active user and returns the id the provider assigned to it. */
@@ -20,4 +27,6 @@ export interface AuthProvider {
   remove(id: string): Promise<void>;
   /** Checks the credentials; throws CredencialesInvalidasError if they are wrong. */
   logIn(email: Email, password: string): Promise<AuthSession>;
+  /** Checks an access token; throws NoAutenticadoError if the provider refuses it. */
+  verifyAccessToken(accessToken: string): Promise<AuthenticatedUser>;
 }

@@ -25,3 +25,13 @@ export class CredencialesInvalidasError extends DomainError {
     super("Invalid email or password");
   }
 }
+
+/** No hay una sesión válida: el token falta, expiró o no es auténtico. */
+export class NoAutenticadoError extends DomainError {
+  constructor() {
+    super("Authentication required");
+  }
+}
+
+/** Se sabe quién es el usuario, pero no tiene permitida la operación. */
+export class AccesoDenegadoError extends DomainError {}
