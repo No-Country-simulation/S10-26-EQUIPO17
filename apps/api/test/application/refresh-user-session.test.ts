@@ -29,6 +29,10 @@ describe("RefreshUserSession", () => {
     assert.notEqual(session.accessToken, login.accessToken);
     assert.notEqual(session.refreshToken, login.refreshToken);
     assert.ok(session.expiresIn > 0);
+    assert.deepEqual(await auth.verifyAccessToken(session.accessToken), {
+      userId: id,
+      role: "company",
+    });
   });
 
   it("returns a null role for a user registered without one", async () => {

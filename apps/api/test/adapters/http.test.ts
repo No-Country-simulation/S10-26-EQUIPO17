@@ -283,6 +283,10 @@ describe("API HTTP", () => {
         assert.match(cookie, /; SameSite=Lax/);
       }
       assert.notEqual(valorDeCookie(res, "refresh_token"), anterior);
+      assert.deepEqual(
+        await dependencias.auth.verifyAccessToken(valorDeCookie(res, "access_token")),
+        { userId, role: "company" },
+      );
     });
 
     it("no expone los tokens en el body", async () => {
