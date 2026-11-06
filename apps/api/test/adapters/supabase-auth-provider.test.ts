@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { AuthApiError, AuthSessionMissingError, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  AuthApiError,
+  AuthRetryableFetchError,
+  AuthSessionMissingError,
+  type SupabaseClient,
+} from "@supabase/supabase-js";
 import { SupabaseAuthProvider } from "../../src/adapters/out/auth/supabase-auth-provider.js";
 import {
   ConflictoError,
@@ -137,6 +142,139 @@ describe("SupabaseAuthProvider.logIn", () => {
       assert.match(error.message, /boom/);
       return true;
     });
+  });
+});
+
+describe("SupabaseAuthProvider.refreshSession", () => {
+  type RefreshResult = {
+    data: {
+      user: { id: string; email?: string; app_metadata: Record<string, unknown> } | null;
+      session: { access_token: string; refresh_token: string; expires_in: number } | null;
+    };
+    error: Error | null;
+  };
+
+  const admin = fakeSupabase({ data: { user: null }, error: null });
+
+  /** Each call returns a new client, as the real factory does. */
+  function refreshClients(result: RefreshResult, refreshes: unknown[] = []) {
+    const clients: SupabaseClient[] = [];
+    const create = () => {
+      const client = {
+        auth: {
+          refreshSession: async (session: unknown) => {
+            refreshes.push(session);
+            return result;
+          },
+        },
+      } as unknown as SupabaseClient;
+      clients.push(client);
+      return client;
+    };
+    return { create, clients };
+  }
+
+  const refreshed = (role: unknown): RefreshResult => ({
+    data: {
+      user: {
+        id: "auth-id",
+        email: "ana@ejemplo.com",
+        app_metadata: role === undefined ? {} : { role },
+      },
+      session: { access_token: "new-access", refresh_token: "new-refresh", expires_in: 3600 },
+    },
+    error: null,
+  });
+
+  const rejected = (error: Error): RefreshResult => ({
+    data: { user: null, session: null },
+    error,
+  });
+
+  it("refreshes on a new client and maps the session, email and role", async () => {
+    const refreshes: unknown[] = [];
+    const sessions = refreshClients(refreshed("company"), refreshes);
+    const auth = providerWith(admin, sessions.create);
+
+    assert.deepEqual(await auth.refreshSession("refresh"), {
+      userId: "auth-id",
+      email: "ana@ejemplo.com",
+      role: "company",
+      accessToken: "new-access",
+      refreshToken: "new-refresh",
+      expiresIn: 3600,
+    });
+    await auth.refreshSession("refresh");
+
+    assert.deepEqual(refreshes, [{ refresh_token: "refresh" }, { refresh_token: "refresh" }]);
+    // Never reuses a client, so one user's session cannot leak into another request.
+    assert.equal(sessions.clients.length, 2);
+    assert.notEqual(sessions.clients[0], sessions.clients[1]);
+  });
+
+  it("returns a null role when app_metadata has none or an unknown one", async () => {
+    for (const role of [undefined, "admin"]) {
+      const auth = providerWith(admin, refreshClients(refreshed(role)).create);
+      assert.equal((await auth.refreshSession("refresh")).role, null);
+    }
+  });
+
+  it("translates a token Supabase refuses", async () => {
+    const refusals = [
+      // What Supabase answers for a token with an impossible format, such as a tampered cookie.
+      new AuthApiError("Refresh token is not valid", 400, "validation_failed"),
+      new AuthApiError("not found", 400, "refresh_token_not_found"),
+      new AuthApiError("already used", 400, "refresh_token_already_used"),
+      new AuthApiError("no session", 400, "session_not_found"),
+      new AuthApiError("expired", 400, "session_expired"),
+      new AuthApiError("user gone", 403, "user_not_found"),
+      new AuthApiError("banned", 400, "user_banned"),
+      new AuthSessionMissingError(),
+    ];
+
+    for (const error of refusals) {
+      const auth = providerWith(admin, refreshClients(rejected(error)).create);
+      await assert.rejects(auth.refreshSession("refresh"), NoAutenticadoError, error.message);
+    }
+  });
+
+  it("propagates an outage instead of reporting the user as logged out", async () => {
+    const outages = [
+      // What auth-js returns for a 5xx or a failed connection, once its retries run out.
+      new AuthRetryableFetchError("boom", 503),
+      new AuthApiError("boom", 500, "unexpected_failure"),
+      new AuthApiError("boom", 429, "over_request_rate_limit"),
+    ];
+
+    for (const error of outages) {
+      const auth = providerWith(admin, refreshClients(rejected(error)).create);
+      await assert.rejects(auth.refreshSession("refresh"), (thrown: Error) => {
+        assert.ok(!(thrown instanceof NoAutenticadoError));
+        assert.match(thrown.message, /boom/);
+        return true;
+      });
+    }
+  });
+
+  it("fails when Supabase returns no session or a user without email", async () => {
+    const incomplete: RefreshResult[] = [
+      { data: { user: null, session: null }, error: null },
+      {
+        data: {
+          user: { id: "auth-id", app_metadata: {} },
+          session: { access_token: "a", refresh_token: "r", expires_in: 3600 },
+        },
+        error: null,
+      },
+    ];
+
+    for (const result of incomplete) {
+      const auth = providerWith(admin, refreshClients(result).create);
+      await assert.rejects(auth.refreshSession("refresh"), (thrown: Error) => {
+        assert.ok(!(thrown instanceof NoAutenticadoError));
+        return true;
+      });
+    }
   });
 });
 

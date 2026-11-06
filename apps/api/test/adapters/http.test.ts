@@ -223,6 +223,124 @@ describe("API HTTP", () => {
     });
   });
 
+  describe("POST /auth/refresh", () => {
+    const credenciales = { email: "refresh@ejemplo.com", password: "clave-segura" };
+    let userId: string;
+
+    before(async () => {
+      userId = await dependencias.auth.register(
+        Email.create(credenciales.email),
+        credenciales.password,
+        "company",
+      );
+    });
+
+    /** Value of a cookie in a response's Set-Cookie headers. */
+    const valorDeCookie = (res: Response, nombre: string) =>
+      res.headers
+        .getSetCookie()
+        .find((cookie) => cookie.startsWith(`${nombre}=`))
+        ?.split(";")[0]
+        ?.slice(nombre.length + 1) ?? "";
+
+    /** Logs in and returns the refresh_token, as the browser holds it. */
+    const iniciarSesion = async () =>
+      valorDeCookie(await post("/auth/login", JSON.stringify(credenciales)), "refresh_token");
+
+    const refrescar = (cookie?: string) =>
+      fetch(`${base}/auth/refresh`, {
+        method: "POST",
+        headers: cookie ? { Cookie: cookie } : {},
+      });
+
+    const assertCookiesBorradas = (res: Response) => {
+      const [access = "", refresh = ""] = res.headers.getSetCookie();
+      assert.match(access, /^access_token=; Path=\/api; Expires=Thu, 01 Jan 1970/);
+      assert.match(refresh, /^refresh_token=; Path=\/api\/auth; Expires=Thu, 01 Jan 1970/);
+      for (const cookie of [access, refresh]) {
+        assert.match(cookie, /; HttpOnly/);
+        assert.match(cookie, /; Secure/);
+        assert.match(cookie, /; SameSite=Lax/);
+      }
+    };
+
+    it("devuelve el usuario y escribe las dos cookies nuevas, igual que el login", async () => {
+      const anterior = await iniciarSesion();
+
+      const res = await refrescar(`refresh_token=${anterior}`);
+
+      assert.equal(res.status, 200);
+      assert.deepEqual(await res.json(), {
+        user: { id: userId, email: credenciales.email, role: "company" },
+      });
+
+      const [access = "", refresh = ""] = res.headers.getSetCookie();
+      assert.match(access, /^access_token=[^;]+; Max-Age=3600; Path=\/api; /);
+      assert.match(refresh, /^refresh_token=[^;]+; Max-Age=2592000; Path=\/api\/auth; /);
+      for (const cookie of [access, refresh]) {
+        assert.match(cookie, /; HttpOnly/);
+        assert.match(cookie, /; Secure/);
+        assert.match(cookie, /; SameSite=Lax/);
+      }
+      assert.notEqual(valorDeCookie(res, "refresh_token"), anterior);
+    });
+
+    it("no expone los tokens en el body", async () => {
+      const res = await refrescar(`refresh_token=${await iniciarSesion()}`);
+      const texto = await res.text();
+
+      assert.ok(!texto.includes(valorDeCookie(res, "access_token")));
+      assert.ok(!texto.includes(valorDeCookie(res, "refresh_token")));
+    });
+
+    it("funciona sin access token y encadena con el refresh token rotado", async () => {
+      const primero = await refrescar(`refresh_token=${await iniciarSesion()}`);
+
+      const segundo = await refrescar(`refresh_token=${valorDeCookie(primero, "refresh_token")}`);
+
+      assert.equal(segundo.status, 200);
+    });
+
+    it("responde 401 y borra las dos cookies sin la cookie de refresh", async () => {
+      const res = await refrescar();
+
+      assert.equal(res.status, 401);
+      assert.deepEqual(await res.json(), { error: "Authentication required" });
+      assertCookiesBorradas(res);
+    });
+
+    it("responde 401 y borra las cookies ante un token inválido o que no es texto", async () => {
+      for (const valor of ["desconocido", "", encodeURIComponent('j:{"a":1}')]) {
+        const res = await refrescar(`refresh_token=${valor}`);
+
+        assert.equal(res.status, 401, valor);
+        assertCookiesBorradas(res);
+      }
+    });
+
+    it("responde 401 y borra las cookies ante un refresh token ya usado", async () => {
+      const usado = await iniciarSesion();
+      await refrescar(`refresh_token=${usado}`);
+
+      const res = await refrescar(`refresh_token=${usado}`);
+
+      assert.equal(res.status, 401);
+      assertCookiesBorradas(res);
+    });
+
+    it("responde 500 y conserva las cookies si el proveedor falla", async (t) => {
+      t.mock.method(console, "error", () => {});
+      t.mock.method(dependencias.auth, "refreshSession", async () => {
+        throw new Error("Supabase Auth: boom");
+      });
+
+      const res = await refrescar("refresh_token=cualquiera");
+
+      assert.equal(res.status, 500);
+      assert.deepEqual(res.headers.getSetCookie(), []);
+    });
+  });
+
   describe("POST /projects", () => {
     const clave = "clave-segura";
     const proyecto = {
