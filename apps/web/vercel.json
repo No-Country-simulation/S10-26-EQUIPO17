@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://ec2-host-pendiente.invalid/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

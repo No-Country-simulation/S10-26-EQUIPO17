@@ -20,3 +20,6 @@ playwright-report/
 
 # Ai config files
 .claude
+
+# Organic Driven Development
+odd/

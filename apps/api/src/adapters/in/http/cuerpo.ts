@@ -19,7 +19,10 @@ export function leerTexto(cuerpo: Cuerpo, campo: string): string {
   return valor;
 }
 
-export function leerTextoOpcional(cuerpo: Cuerpo, campo: string): string | null {
+export function leerTextos(cuerpo: Cuerpo, campo: string): string[] {
   const valor = cuerpo[campo];
-  return valor === undefined || valor === null ? null : leerTexto(cuerpo, campo);
+  if (!Array.isArray(valor) || !valor.every((item) => typeof item === "string")) {
+    throw new ValidacionError(`El campo "${campo}" debe ser una lista de textos`);
+  }
+  return valor;
 }

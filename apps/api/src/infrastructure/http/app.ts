@@ -1,18 +1,30 @@
-import express, { type Express } from "express";
+import cookieParser from "cookie-parser";
+import express, { Router, type Express } from "express";
+import { API_PREFIX } from "../../adapters/in/http/api-prefix.js";
 import { manejadorDeErrores } from "../../adapters/in/http/manejador-de-errores.js";
-import { rutasDeEmpresas } from "../../adapters/in/http/rutas-de-empresas.js";
-import { rutasDeUsuarios } from "../../adapters/in/http/rutas-de-usuarios.js";
+import { authRoutes } from "../../adapters/in/http/auth-routes.js";
+import { companyRoutes } from "../../adapters/in/http/company-routes.js";
+import { projectRoutes } from "../../adapters/in/http/project-routes.js";
+import type { Config } from "../config/env.js";
 import type { CasosDeUso } from "../container.js";
 
-export function crearApp(casos: CasosDeUso): Express {
+export type OpcionesHttp = Pick<Config, "cookies">;
+
+// No CORS on purpose: the browser always reaches the API on the web's own origin, through the Vite
+// dev proxy or the Vercel rewrite, so cross-origin requests are never needed and stay blocked.
+export function crearApp(casos: CasosDeUso, { cookies }: OpcionesHttp): Express {
   const app = express();
   app.use(express.json());
+  app.use(cookieParser());
 
-  app.get("/", (_req, res) => {
+  const api = Router();
+  api.get("/", (_req, res) => {
     res.json({ status: "ok" });
   });
-  app.use("/usuarios", rutasDeUsuarios(casos.registrarUsuario));
-  app.use("/empresas", rutasDeEmpresas(casos.crearEmpresa, casos.obtenerEmpresa));
+  api.use("/auth", authRoutes(casos.logIn, casos.refreshUserSession, cookies));
+  api.use("/companies", companyRoutes(casos.registerCompany));
+  api.use("/projects", projectRoutes(casos.uploadProject, casos.authenticate));
+  app.use(API_PREFIX, api);
 
   app.use((_req, res) => {
     res.status(404).json({ error: "Ruta no encontrada" });

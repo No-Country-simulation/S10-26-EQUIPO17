@@ -3,7 +3,7 @@ import { crearCasosDeUso, crearDependencias } from "./infrastructure/container.j
 import { crearApp } from "./infrastructure/http/app.js";
 
 const config = leerConfig();
-const app = crearApp(crearCasosDeUso(crearDependencias(config)));
+const app = crearApp(crearCasosDeUso(crearDependencias(config)), config);
 
 app.listen(config.puerto, () => {
   console.log(

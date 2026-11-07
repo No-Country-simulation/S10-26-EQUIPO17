@@ -8,21 +8,21 @@ externas siguen el enfoque **hexagonal (puertos y adaptadores)**.
 ```
 src/
 ├── domain/                 1. Entidades: reglas de negocio puras
-│   ├── entities/           Usuario, Empresa
-│   ├── value-objects/      Correo
-│   ├── errors.ts           ValidacionError, NoEncontradoError, ConflictoError
+│   ├── entities/           User, Company, Project, Country, BusinessSector, OrganizationType, Vertical, ProjectStage
+│   ├── value-objects/      Email, UserRole
+│   ├── errors.ts           ValidacionError, NoEncontradoError, ConflictoError, CredencialesInvalidasError, NoAutenticadoError, AccesoDenegadoError
 │   └── validaciones.ts
 ├── application/            2. Casos de uso
-│   ├── use-cases/          RegistrarUsuario, CrearEmpresa, ObtenerEmpresa
+│   ├── use-cases/          RegisterCompany, LogIn, RefreshUserSession, Authenticate, UploadProject
 │   └── ports/
 │       ├── in/             Lo que la aplicación ofrece (interfaces de los casos de uso)
-│       └── out/            Lo que la aplicación necesita (repositorios, hasher, ids)
+│       └── out/            Lo que la aplicación necesita (repositorios, autenticación, ids)
 ├── adapters/               3. Adaptadores de interfaz
-│   ├── in/http/            Adaptador primario: rutas Express, lectura del body, DTOs, errores → HTTP
+│   ├── in/http/            Adaptador primario: rutas Express, autenticación por cookie, lectura del body, DTOs, errores → HTTP
 │   └── out/                Adaptadores secundarios: implementan ports/out
 │       ├── persistence/supabase/
 │       ├── persistence/memory/
-│       ├── security/       Hash de claves con scrypt
+│       ├── auth/           Registro, baja, login, renovación de sesión y validación de tokens en Supabase Auth (y su doble en memoria)
 │       └── ids/            UUID
 ├── infrastructure/         4. Frameworks y drivers
 │   ├── config/env.ts       Lectura y validación de variables de entorno
@@ -55,13 +55,104 @@ Los `import` solo pueden apuntar **hacia adentro**: `infrastructure → adapters
 
 | Método | Ruta            | Body                                                | Respuesta                                     |
 | ------ | --------------- | --------------------------------------------------- | --------------------------------------------- |
-| GET    | `/`             | —                                                   | `{"status":"ok"}`                             |
-| POST   | `/usuarios`     | `{ "correo", "clave" }`                             | `201 { id, correo }` (la clave nunca se devuelve) |
-| POST   | `/empresas`     | `{ "nombre", "pais", "usuarioId"? }`                | `201 { id, nombre, pais, usuario }`           |
-| GET    | `/empresas/:id` | —                                                   | `200 { id, nombre, pais, usuario }`           |
+| GET    | `/api`          | —                                                   | `{"status":"ok"}`                             |
+| POST   | `/api/companies/register` | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "organizationType" }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, organizationType, user }` |
+| POST   | `/api/auth/login` | `{ "email", "password" }`                         | `200 { user: { id, email, role } }` + cookies de sesión |
+| POST   | `/api/auth/refresh` | Sin body; usa la cookie `refresh_token`         | `200 { user: { id, email, role } }` + cookies de sesión nuevas |
+| POST   | `/api/projects` (requiere sesión de company) | `{ "title", "description", "vertical", "businessSectors", "projectStage" }` | `201 { id, companyId, title, description, vertical, businessSectors, projectStage }` |
 
-Errores: `{ "error": "mensaje" }` con `400` (validación o JSON mal formado), `404` (no existe) o
-`409` (correo ya registrado).
+Todas las rutas viven bajo `/api` (`API_PREFIX` en `adapters/in/http/api-prefix.ts`).
+
+Errores: `{ "error": "mensaje" }` con `400` (validación o JSON mal formado), `401` (email o
+contraseña incorrectos, o sesión faltante o inválida), `403` (sin permiso para la operación),
+`404` (ruta inexistente) o `409` (email ya registrado).
+
+### Registro de una company
+
+`POST /api/companies/register` crea el usuario y la company en una sola request:
+
+1. Valida el email, la contraseña y todos los datos de la company antes de crear nada.
+2. Crea el usuario en Supabase Auth con `app_metadata.role = "company"`.
+3. Guarda la company vinculada a ese usuario.
+4. Si la company no se puede guardar, elimina el usuario para no dejarlo sin rol.
+
+Es el único endpoint de registro y la única forma de crear una company: no se puede crear una
+company sin usuario ni vincularla a un usuario existente.
+
+### Sesión
+
+`POST /api/auth/login` devuelve el usuario con su `role` (`"company"` o `null` si no tiene uno), para
+que el frontend decida qué mostrar. La autorización la sigue haciendo la API.
+
+Los tokens no van en el body: se guardan en cookies `HttpOnly`, que el JavaScript del frontend no
+puede leer.
+
+| Cookie          | `Path`  | Duración                     |
+| --------------- | ------- | ---------------------------- |
+| `access_token`  | `/api`      | La del JWT de Supabase (1 h) |
+| `refresh_token` | `/api/auth` | 30 días desde el último refresh |
+
+`Secure` y `SameSite` se configuran con `COOKIE_SECURE` y `COOKIE_SAME_SITE` (ver el README de la
+raíz). Un email desconocido y una contraseña incorrecta devuelven el mismo `401`, así no se revela
+qué emails están registrados.
+
+### Renovar la sesión
+
+`POST /api/auth/refresh` cambia la cookie `refresh_token` por una sesión nueva y devuelve lo mismo que
+el login. No pide el access token, porque se usa justamente cuando ya venció.
+
+Supabase rota el refresh token, así que la respuesta reescribe las dos cookies. Como la cookie
+`refresh_token` se renueva, los 30 días cuentan desde el último refresh: una sesión en uso no vence.
+
+Sin cookie, o con un token que Supabase rechaza, responde `401` y borra las dos cookies, porque esa
+sesión ya no sirve. Si Supabase Auth no está disponible responde `500` y las conserva, para poder
+reintentar: una caída no cierra la sesión.
+
+### Rutas protegidas
+
+El middleware `autenticar` (`adapters/in/http/autenticar.ts`) lee la cookie `access_token` y le
+pregunta a Supabase Auth de quién es, con `auth.getUser(token)`. Sin cookie, o con un token inválido,
+expirado o revocado, responde `401`. Si Supabase Auth no está disponible responde `500`: una caída no
+se informa como sesión cerrada.
+
+El middleware solo dice quién llama. Qué puede hacer lo decide cada caso de uso.
+
+### Subir un proyecto
+
+`POST /api/projects` recibe solo JSON, sin archivos adjuntos:
+
+1. `autenticar` valida la sesión.
+2. Si el rol no es `company`, o el usuario no tiene una company, responde `403`.
+3. Crea el proyecto a nombre de la company del usuario y lo guarda.
+
+El `companyId` sale de la sesión y nunca del body, así nadie puede publicar por otra company.
+
+### Proxy: la web y la API en el mismo origen
+
+La web (Vercel) y la API (EC2) están en sitios distintos. Para que las cookies de sesión sean de
+primera parte, el navegador nunca le habla directo a la API: siempre pide `/api/*` al origen de la
+web y un proxy lo reenvía.
+
+| Entorno    | Proxy                                         | Destino                  |
+| ---------- | --------------------------------------------- | ------------------------ |
+| Desarrollo | `server.proxy` en `apps/web/vite.config.ts`   | `http://127.0.0.1:3000`  |
+| Producción | `rewrites` en `apps/web/vercel.json`, antes del catch-all de la SPA | La EC2, por HTTPS |
+
+Así:
+
+- `SameSite=Lax` frena el CSRF: un formulario de otro sitio llega sin cookies.
+- Safari y Firefox no bloquean las cookies, porque no son de terceros.
+- La API no habilita CORS: ningún request legítimo es cross-origin, así que ningún otro origen
+  puede leer respuestas hechas con la sesión del usuario.
+- El tramo Vercel → EC2 lleva los tokens, así que la EC2 tiene que servir HTTPS.
+
+Con `SameSite=None` hará falta una protección propia contra CSRF.
+
+### Login y refresh en Supabase
+
+El login y el refresh en Supabase se hacen con un cliente nuevo por request. Ambos guardan la sesión en
+el cliente, y las consultas siguientes se harían como ese usuario: por eso nunca se usa el cliente
+compartido con la clave secreta.
 
 ## Persistencia
 
