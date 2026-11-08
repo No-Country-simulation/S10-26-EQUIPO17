@@ -8,7 +8,11 @@ export class InMemoryProjectRepository implements ProjectRepository {
   async save(project: Project): Promise<void> {
     this.projects.set(project.id, project);
   }
-
+  async findByCompanyId(companyId: string): Promise<Project[]> {
+    return [...this.projects.values()].filter(
+      (project) => project.companyId === companyId,
+    );
+  }
   /** Not part of the port: lets tests check what was saved. */
   async findById(id: string): Promise<Project | null> {
     return this.projects.get(id) ?? null;

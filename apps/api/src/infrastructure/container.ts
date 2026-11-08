@@ -26,6 +26,15 @@ import { SupabaseProjectRepository } from "../adapters/out/persistence/supabase/
 import { SupabaseUserRepository } from "../adapters/out/persistence/supabase/supabase-user-repository.js";
 import type { Config } from "./config/env.js";
 import { crearClienteSupabase } from "./supabase/client.js";
+import type { ListProjects } from "../application/ports/in/list-projects.js";
+import { ListProjectsUserCase } from "../application/use-cases/list-projects.js";
+import type { ProjectEditRequestRepository } from "../application/ports/out/project-edit-request-repository.js";
+import { InMemoryProjectEditRequestRepository } from "../adapters/out/persistence/memory/in-memory-project-edit-request-repository.js";
+import { SupabaseProjectEditRequestRepository } from "../adapters/out/persistence/supabase/supabase-project-edit-request-repository.js";
+import type { SubmitProjectEditRequest } from "../application/ports/in/submit-project-edit-request.js";
+import type { ReviewProjectEditRequest } from "../application/ports/in/review-project-edit-request.js";
+import { SubmitProjectEditRequestUseCase } from "../application/use-cases/submit-project-edit-request.js";
+import { ReviewProjectEditRequestUseCase } from "../application/use-cases/review-project-edit-request.js";
 
 /** Puertos de salida que necesitan los casos de uso. */
 export interface Dependencias {
@@ -34,6 +43,7 @@ export interface Dependencias {
   projects: ProjectRepository;
   auth: AuthProvider;
   ids: GeneradorDeIds;
+  editRequests: ProjectEditRequestRepository;
 }
 
 /** Puertos de entrada que consume el adaptador HTTP. */
@@ -43,6 +53,9 @@ export interface CasosDeUso {
   refreshUserSession: RefreshUserSession;
   authenticate: Authenticate;
   uploadProject: UploadProject;
+  listProjects: ListProjects;
+  submitProjectEditRequest: SubmitProjectEditRequest;
+  reviewProjectEditRequest: ReviewProjectEditRequest;
 }
 
 export function crearDependencias(config: Config): Dependencias {
@@ -50,32 +63,54 @@ export function crearDependencias(config: Config): Dependencias {
 
   if (config.supabase === null) {
     const users = new InMemoryUserRepository();
+    const projects = new InMemoryProjectRepository();
+    // Projects se inicializa separado porque el edit request necesita el acceso
     return {
       ids,
       users,
       auth: new InMemoryAuthProvider(users, ids),
       companies: new InMemoryCompanyRepository(),
-      projects: new InMemoryProjectRepository(),
+      projects,
+      editRequests: new InMemoryProjectEditRequestRepository(projects),
     };
   }
 
   const { url, claveSecreta } = config.supabase;
   const supabase = crearClienteSupabase(url, claveSecreta);
+  const projects = new SupabaseProjectRepository(supabase);
+  const editRequests = new SupabaseProjectEditRequestRepository(supabase);
   return {
     ids,
-    auth: new SupabaseAuthProvider(supabase, () => crearClienteSupabase(url, claveSecreta)),
+    auth: new SupabaseAuthProvider(supabase, () =>
+      crearClienteSupabase(url, claveSecreta),
+    ),
     users: new SupabaseUserRepository(supabase),
     companies: new SupabaseCompanyRepository(supabase),
-    projects: new SupabaseProjectRepository(supabase),
+    projects,
+    editRequests,
   };
 }
 
-export function crearCasosDeUso({ companies, projects, auth, ids }: Dependencias): CasosDeUso {
+export function crearCasosDeUso({
+  companies,
+  projects,
+  editRequests,
+  auth,
+  ids,
+}: Dependencias): CasosDeUso {
   return {
     registerCompany: new RegisterCompanyUseCase(auth, companies, ids),
     logIn: new LogInUseCase(auth),
     refreshUserSession: new RefreshUserSessionUseCase(auth),
     authenticate: new AuthenticateUseCase(auth),
     uploadProject: new UploadProjectUseCase(companies, projects, ids),
+    listProjects: new ListProjectsUserCase(companies, projects),
+    submitProjectEditRequest: new SubmitProjectEditRequestUseCase(
+      companies,
+      projects,
+      editRequests,
+      ids,
+    ),
+    reviewProjectEditRequest: new ReviewProjectEditRequestUseCase(editRequests),
   };
 }
