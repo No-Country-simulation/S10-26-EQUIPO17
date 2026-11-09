@@ -21,7 +21,7 @@ export function crearApp(casos: CasosDeUso, { cookies }: OpcionesHttp): Express 
   api.get("/", (_req, res) => {
     res.json({ status: "ok" });
   });
-  api.use("/auth", authRoutes(casos.logIn, casos.refreshUserSession, cookies));
+  api.use("/auth", authRoutes(casos.logIn, casos.refreshUserSession, casos.logOut, cookies));
   api.use("/companies", companyRoutes(casos.registerCompany));
   api.use("/projects", projectRoutes(casos.uploadProject, casos.authenticate));
   app.use(API_PREFIX, api);
