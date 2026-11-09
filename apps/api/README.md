@@ -13,7 +13,7 @@ src/
 │   ├── errors.ts           ValidacionError, NoEncontradoError, ConflictoError, CredencialesInvalidasError, NoAutenticadoError, AccesoDenegadoError
 │   └── validaciones.ts
 ├── application/            2. Casos de uso
-│   ├── use-cases/          RegisterCompany, LogIn, RefreshUserSession, Authenticate, UploadProject
+│   ├── use-cases/          RegisterCompany, LogIn, RefreshUserSession, LogOut, Authenticate, UploadProject
 │   └── ports/
 │       ├── in/             Lo que la aplicación ofrece (interfaces de los casos de uso)
 │       └── out/            Lo que la aplicación necesita (repositorios, autenticación, ids)
@@ -22,7 +22,7 @@ src/
 │   └── out/                Adaptadores secundarios: implementan ports/out
 │       ├── persistence/supabase/
 │       ├── persistence/memory/
-│       ├── auth/           Registro, baja, login, renovación de sesión y validación de tokens en Supabase Auth (y su doble en memoria)
+│       ├── auth/           Registro, baja, login, renovación y cierre de sesión y validación de tokens en Supabase Auth (y su doble en memoria)
 │       └── ids/            UUID
 ├── infrastructure/         4. Frameworks y drivers
 │   ├── config/env.ts       Lectura y validación de variables de entorno
@@ -59,6 +59,7 @@ Los `import` solo pueden apuntar **hacia adentro**: `infrastructure → adapters
 | POST   | `/api/companies/register` | `{ "email", "password", "firstName", "lastName", "jobPosition", "companyName", "country", "businessSector", "organizationType" }` | `201 { id, firstName, lastName, jobPosition, companyName, country, businessSector, organizationType, user }` |
 | POST   | `/api/auth/login` | `{ "email", "password" }`                         | `200 { user: { id, email, role } }` + cookies de sesión |
 | POST   | `/api/auth/refresh` | Sin body; usa la cookie `refresh_token`         | `200 { user: { id, email, role } }` + cookies de sesión nuevas |
+| POST   | `/api/auth/logout` | Sin body; usa la cookie `access_token`           | `204` + borra las cookies de sesión |
 | POST   | `/api/projects` (requiere sesión de company) | `{ "title", "description", "vertical", "businessSectors", "projectStage" }` | `201 { id, companyId, title, description, vertical, businessSectors, projectStage }` |
 
 Todas las rutas viven bajo `/api` (`API_PREFIX` en `adapters/in/http/api-prefix.ts`).
@@ -107,6 +108,20 @@ Supabase rota el refresh token, así que la respuesta reescribe las dos cookies.
 Sin cookie, o con un token que Supabase rechaza, responde `401` y borra las dos cookies, porque esa
 sesión ya no sirve. Si Supabase Auth no está disponible responde `500` y las conserva, para poder
 reintentar: una caída no cierra la sesión.
+
+### Cerrar la sesión
+
+`POST /api/auth/logout` revoca en Supabase la sesión de la cookie `access_token`, con su refresh
+token. Las otras sesiones del usuario, por ejemplo en otro navegador, siguen abiertas.
+
+Siempre responde `204` y borra las dos cookies, así que cerrar una sesión ya cerrada no es un error.
+Tampoco pide una sesión válida:
+
+- Sin cookie, o con un access token vencido o inválido, borra las cookies sin llamar a Supabase o
+  ignorando su rechazo. Supabase solo revoca con un access token válido: si ya venció, el refresh
+  token sigue sirviendo del lado de Supabase, aunque el navegador ya no lo tenga.
+- Si Supabase Auth no está disponible, borra las cookies igual y deja el error en la consola de la
+  API: una caída no deja al usuario con la sesión abierta en el navegador.
 
 ### Rutas protegidas
 
