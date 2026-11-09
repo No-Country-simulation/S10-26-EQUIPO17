@@ -32,6 +32,24 @@ const REFRESH_REFUSAL_CODES: ReadonlySet<string | undefined> = new Set([
   "user_banned",
 ]);
 
+// Otherwise fetch throws while building the request, which looks just like a network failure.
+function assertHeaderSafe(accessToken: string): void {
+  if (!HEADER_SAFE_TOKEN.test(accessToken)) {
+    throw new NoAutenticadoError();
+  }
+}
+
+/**
+ * Whether Supabase refused an access token: invalid, expired, its session revoked or its user
+ * deleted. A revoked session comes back as AuthSessionMissingError, not as an AuthApiError.
+ */
+function isAccessTokenRefusal(error: unknown): boolean {
+  return (
+    isAuthSessionMissingError(error) ||
+    (isAuthApiError(error) && (error.status === 401 || error.status === 403))
+  );
+}
+
 // The on_auth_user_created trigger (see supabase/migrations) copies the new
 // auth.users row into public.users, so this adapter only talks to Auth.
 export class SupabaseAuthProvider implements AuthProvider {
@@ -97,17 +115,10 @@ export class SupabaseAuthProvider implements AuthProvider {
 
   // Passing the token keeps the shared client stateless: no session is stored in it.
   async verifyAccessToken(accessToken: string): Promise<AuthenticatedUser> {
-    // Otherwise fetch throws while building the request, which looks just like a network failure.
-    if (!HEADER_SAFE_TOKEN.test(accessToken)) {
-      throw new NoAutenticadoError();
-    }
+    assertHeaderSafe(accessToken);
     const { data, error } = await this.supabase.auth.getUser(accessToken);
     // Only a refusal means "not logged in"; an outage has to surface as a server error.
-    // A revoked session comes back as AuthSessionMissingError, not as an AuthApiError.
-    if (
-      isAuthSessionMissingError(error) ||
-      (isAuthApiError(error) && (error.status === 401 || error.status === 403))
-    ) {
+    if (isAccessTokenRefusal(error)) {
       throw new NoAutenticadoError();
     }
     if (error || !data.user) {
@@ -115,6 +126,19 @@ export class SupabaseAuthProvider implements AuthProvider {
     }
     const role = data.user.app_metadata.role;
     return { userId: data.user.id, role: isUserRole(role) ? role : null };
+  }
+
+  // "local" closes only this session. Supabase needs a valid access token for it: an expired one
+  // is refused, and its refresh token stays usable on Supabase's side.
+  async logOut(accessToken: string): Promise<void> {
+    assertHeaderSafe(accessToken);
+    const { error } = await this.supabase.auth.admin.signOut(accessToken, "local");
+    if (isAccessTokenRefusal(error)) {
+      throw new NoAutenticadoError();
+    }
+    if (error) {
+      throw new Error(`Supabase Auth: ${error.message}`, { cause: error });
+    }
   }
 
   async register(email: Email, password: string, role?: UserRole): Promise<string> {
