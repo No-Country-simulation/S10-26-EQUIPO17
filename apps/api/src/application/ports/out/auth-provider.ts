@@ -39,4 +39,9 @@ export interface AuthProvider {
   refreshSession(refreshToken: string): Promise<RefreshedAuthSession>;
   /** Checks an access token; throws NoAutenticadoError if the provider refuses it. */
   verifyAccessToken(accessToken: string): Promise<AuthenticatedUser>;
+  /**
+   * Revokes the session of an access token, refresh token included; the user's other sessions
+   * stay open. Throws NoAutenticadoError if the provider refuses the token.
+   */
+  logOut(accessToken: string): Promise<void>;
 }
