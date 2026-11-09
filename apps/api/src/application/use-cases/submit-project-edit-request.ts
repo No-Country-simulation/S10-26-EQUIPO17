@@ -57,15 +57,7 @@ export class SubmitProjectEditRequestUseCase implements SubmitProjectEditRequest
     if (!hasChanges) {
       throw new ValidacionError("At least one project field must be provided");
     }
-    const existingRequest = await this.editRequests.findPendingByProjectId(
-      project.id,
-    );
 
-    if (existingRequest) {
-      throw new ConflictoError(
-        "A pending edit request already exists for this project",
-      );
-    }
     const proposedProject = Project.create({
       id: project.id,
       companyId: project.companyId,
@@ -84,6 +76,45 @@ export class SubmitProjectEditRequestUseCase implements SubmitProjectEditRequest
           ? project.projectStage
           : new ProjectStage(data.projectStage),
     });
+    // Compare business sectors as an unordered collection.
+    // order alone shouldn't count as project change.
+    const sectoresActuales = project.businessSectors
+      .map((sector) => sector.getSector())
+      .sort();
+
+    const sectoresPropuestos = proposedProject.businessSectors
+      .map((sector) => sector.getSector())
+      .sort();
+
+    const mismosSectores =
+      sectoresActuales.length === sectoresPropuestos.length &&
+      sectoresActuales.every(
+        (sector, index) => sector === sectoresPropuestos[index],
+      );
+
+    const tieneCambiosReales =
+      project.title !== proposedProject.title ||
+      project.description !== proposedProject.description ||
+      project.vertical.getVertical() !==
+        proposedProject.vertical.getVertical() ||
+      !mismosSectores ||
+      project.projectStage.getStage() !==
+        proposedProject.projectStage.getStage();
+
+    if (!tieneCambiosReales) {
+      throw new ValidacionError(
+        "The proposed changes are identical to the current project",
+      );
+    }
+    const existingRequest = await this.editRequests.findPendingByProjectId(
+      project.id,
+    );
+
+    if (existingRequest) {
+      throw new ConflictoError(
+        "A pending edit request already exists for this project",
+      );
+    }
     const request = ProjectEditRequest.create({
       id: this.ids.generar(),
       proposedProject,

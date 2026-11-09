@@ -5,7 +5,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { Project } from "../src/domain/entities/project.js";
 import { ProjectEditRequest } from "../src/domain/entities/project-edit-request.js";
-import { ConflictoError } from "../src/domain/errors.js";
+import { ConflictoError, NoEncontradoError } from "../src/domain/errors.js";
 
 import { SupabaseProjectEditRequestRepository } from "../src/adapters/out/persistence/supabase/supabase-project-edit-request-repository.js";
 import { BusinessSector } from "../src/domain/value-objects/business-sector.js";
@@ -18,6 +18,7 @@ describe("SupabaseProjectEditRequestRepository integration", () => {
 
   let userId: string | null = null;
   let companyId: string | null = null;
+  const temporaryUserIds = new Set<string>();
 
   const db = (): SupabaseClient => {
     assert.ok(supabase);
@@ -114,8 +115,27 @@ describe("SupabaseProjectEditRequestRepository integration", () => {
 
       if (error) throw error;
     }
+    for (const temporaryUserId of temporaryUserIds) {
+      const { error } = await supabase.auth.admin.deleteUser(temporaryUserId);
+
+      if (error) throw error;
+    }
   });
 
+  async function crearUsuarioTemporal(): Promise<string> {
+    const { data, error } = await db().auth.admin.createUser({
+      email: `deletion-test-${randomUUID()}@example.test`,
+      password: randomUUID(),
+      email_confirm: true,
+    });
+
+    if (error) throw error;
+
+    assert.ok(data.user);
+    temporaryUserIds.add(data.user.id);
+
+    return data.user.id;
+  }
   async function crearSolicitud(
     tituloOriginal: string,
     tituloPropuesto: string,
@@ -187,6 +207,47 @@ describe("SupabaseProjectEditRequestRepository integration", () => {
 
       assert.ok(allPending.some((item) => item.id === request.id));
     });
+
+    it("translates a missing project foreign key into NotFound", async () => {
+      assert.ok(companyId);
+      assert.ok(userId);
+
+      const proposedProject = Project.create({
+        id: randomUUID(),
+        companyId,
+        title: "Project whose database record is missing",
+        description: "Foreign key integration test",
+        vertical: new Vertical("E-commerce"),
+        businessSectors: [
+          new BusinessSector("Product"),
+          new BusinessSector("IT"),
+        ],
+        projectStage: new ProjectStage("MVP"),
+      });
+
+      const request = ProjectEditRequest.create({
+        id: randomUUID(),
+        proposedProject,
+        requestedByUserId: userId,
+      });
+
+      await assert.rejects(repo().save(request), NoEncontradoError);
+    });
+
+    it("translates the one-pending-request constraint into Conflict", async () => {
+      const { request } = await crearSolicitud(
+        "Original title",
+        "First proposed title",
+      );
+
+      const duplicate = ProjectEditRequest.create({
+        id: randomUUID(),
+        proposedProject: request.proposedProject,
+        requestedByUserId: userId!,
+      });
+
+      await assert.rejects(repo().save(duplicate), ConflictoError);
+    });
   });
 
   describe("review", () => {
@@ -253,6 +314,79 @@ describe("SupabaseProjectEditRequestRepository integration", () => {
       if (error) throw error;
 
       assert.equal(data.title, originalTitle);
+    });
+    it("preserves the request when its requester and reviewer accounts are deleted", async () => {
+      assert.ok(companyId);
+
+      const requesterId = await crearUsuarioTemporal();
+      const reviewerId = await crearUsuarioTemporal();
+      const projectId = randomUUID();
+
+      const { error: projectError } = await db()
+        .from("projects")
+        .insert({
+          id: projectId,
+          company_id: companyId,
+          title: "Project before account deletion",
+          description: "Account deletion test",
+          vertical: "E-commerce",
+          business_sectors: ["Product", "IT"],
+          project_stage: "MVP",
+        });
+
+      if (projectError) throw projectError;
+
+      const proposedProject = Project.create({
+        id: projectId,
+        companyId,
+        title: "Project after approval",
+        description: "Account deletion test",
+        vertical: new Vertical("E-commerce"),
+        businessSectors: [
+          new BusinessSector("Product"),
+          new BusinessSector("IT"),
+        ],
+        projectStage: new ProjectStage("MVP"),
+      });
+
+      const request = ProjectEditRequest.create({
+        id: randomUUID(),
+        proposedProject,
+        requestedByUserId: requesterId,
+      });
+
+      await repo().save(request);
+      await repo().review(request.approve(reviewerId, new Date()));
+
+      // Delete the requester first.
+      const { error: requesterError } =
+        await db().auth.admin.deleteUser(requesterId);
+
+      if (requesterError) throw requesterError;
+      temporaryUserIds.delete(requesterId);
+
+      let found = await repo().findById(request.id);
+
+      assert.ok(found);
+      assert.equal(found.status, "approved");
+      assert.equal(found.requestedByUserId, null);
+      assert.equal(found.reviewedByUserId, reviewerId);
+      assert.ok(found.reviewedAt);
+
+      // Now delete the reviewer too.
+      const { error: reviewerError } =
+        await db().auth.admin.deleteUser(reviewerId);
+
+      if (reviewerError) throw reviewerError;
+      temporaryUserIds.delete(reviewerId);
+
+      found = await repo().findById(request.id);
+
+      assert.ok(found);
+      assert.equal(found.status, "approved");
+      assert.equal(found.requestedByUserId, null);
+      assert.equal(found.reviewedByUserId, null);
+      assert.ok(found.reviewedAt);
     });
   });
 });

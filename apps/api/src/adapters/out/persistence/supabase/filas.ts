@@ -117,7 +117,7 @@ export interface ProjectEditRequestRow {
   id: string;
   project_id: string;
   company_id: string;
-  requested_by_user_id: string;
+  requested_by_user_id: string | null;
 
   proposed_title: string;
   proposed_description: string;

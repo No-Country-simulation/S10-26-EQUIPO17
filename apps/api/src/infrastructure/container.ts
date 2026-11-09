@@ -27,7 +27,7 @@ import { SupabaseUserRepository } from "../adapters/out/persistence/supabase/sup
 import type { Config } from "./config/env.js";
 import { crearClienteSupabase } from "./supabase/client.js";
 import type { ListProjects } from "../application/ports/in/list-projects.js";
-import { ListProjectsUserCase } from "../application/use-cases/list-projects.js";
+import { ListProjectsUseCase } from "../application/use-cases/list-projects.js";
 import type { ProjectEditRequestRepository } from "../application/ports/out/project-edit-request-repository.js";
 import { InMemoryProjectEditRequestRepository } from "../adapters/out/persistence/memory/in-memory-project-edit-request-repository.js";
 import { SupabaseProjectEditRequestRepository } from "../adapters/out/persistence/supabase/supabase-project-edit-request-repository.js";
@@ -35,6 +35,8 @@ import type { SubmitProjectEditRequest } from "../application/ports/in/submit-pr
 import type { ReviewProjectEditRequest } from "../application/ports/in/review-project-edit-request.js";
 import { SubmitProjectEditRequestUseCase } from "../application/use-cases/submit-project-edit-request.js";
 import { ReviewProjectEditRequestUseCase } from "../application/use-cases/review-project-edit-request.js";
+import type { ListPendingProjectEditRequests } from "../application/ports/in/list-pending-project-edit-requests.js";
+import { ListPendingProjectEditRequestsUseCase } from "../application/use-cases/list-pending-project-edit-requests.js";
 
 /** Puertos de salida que necesitan los casos de uso. */
 export interface Dependencias {
@@ -56,6 +58,7 @@ export interface CasosDeUso {
   listProjects: ListProjects;
   submitProjectEditRequest: SubmitProjectEditRequest;
   reviewProjectEditRequest: ReviewProjectEditRequest;
+  listPendingProjectEditRequests: ListPendingProjectEditRequests;
 }
 
 export function crearDependencias(config: Config): Dependencias {
@@ -104,7 +107,7 @@ export function crearCasosDeUso({
     refreshUserSession: new RefreshUserSessionUseCase(auth),
     authenticate: new AuthenticateUseCase(auth),
     uploadProject: new UploadProjectUseCase(companies, projects, ids),
-    listProjects: new ListProjectsUserCase(companies, projects),
+    listProjects: new ListProjectsUseCase(companies, projects),
     submitProjectEditRequest: new SubmitProjectEditRequestUseCase(
       companies,
       projects,
@@ -112,5 +115,8 @@ export function crearCasosDeUso({
       ids,
     ),
     reviewProjectEditRequest: new ReviewProjectEditRequestUseCase(editRequests),
+    listPendingProjectEditRequests: new ListPendingProjectEditRequestsUseCase(
+      editRequests,
+    ),
   };
 }

@@ -9,14 +9,18 @@ import { ReviewProjectEditRequestUseCase } from "../../src/application/use-cases
 import { Project } from "../../src/domain/entities/project.js";
 import { ProjectEditRequest } from "../../src/domain/entities/project-edit-request.js";
 
-import { ConflictoError, NoEncontradoError } from "../../src/domain/errors.js";
+import {
+  ConflictoError,
+  NoEncontradoError,
+  AccesoDenegadoError,
+} from "../../src/domain/errors.js";
 
 import { BusinessSector } from "../../src/domain/value-objects/business-sector.js";
 import { ProjectStage } from "../../src/domain/value-objects/project-stage.js";
 import { Vertical } from "../../src/domain/value-objects/vertical.js";
 
 describe("ReviewProjectEditRequest", () => {
-  const reviewer = { userId: "reviewer-1", role: "company" } as const;
+  const reviewer = { userId: "reviewer-1", role: "admin" } as const;
 
   let projects: InMemoryProjectRepository;
   let editRequests: InMemoryProjectEditRequestRepository;
@@ -100,7 +104,25 @@ describe("ReviewProjectEditRequest", () => {
       NoEncontradoError,
     );
   });
+  //ensuring company cannot access reject or approve projects, which is exclusive to admin
+  it("rejects companies trying to review edit requests", async () => {
+    const company = { userId: "company-user-1", role: "company" } as const;
 
+    await assert.rejects(
+      reviewRequest.execute(company, "request-1", {
+        type: "approve",
+      }),
+      AccesoDenegadoError,
+    );
+
+    await assert.rejects(
+      reviewRequest.execute(company, "request-1", {
+        type: "reject",
+        reason: "Unauthorized",
+      }),
+      AccesoDenegadoError,
+    );
+  });
   it("does not allow an already reviewed request to be approved again", async () => {
     await reviewRequest.execute(reviewer, "request-1", {
       type: "approve",

@@ -73,7 +73,7 @@ export interface ProjectEditRequestResponse {
   id: string;
   projectId: string;
   companyId: string;
-  requestedByUserId: string;
+  requestedByUserId: string | null;
   proposedProject: ProjectResponse;
   status: string;
   createdAt: string;

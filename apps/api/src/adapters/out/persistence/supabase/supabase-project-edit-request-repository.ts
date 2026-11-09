@@ -23,12 +23,30 @@ const PROJECT_EDIT_REQUEST_COLUMNS =
 function traducirErrorEditRequest(error: PostgrestError): Error {
   if (error.code === "23505") {
     return new ConflictoError(
-      "A pending edit request already exists or the request was already reviewed",
+      "A pending edit request already exists for this project",
+    );
+  }
+
+  if (error.code === "23503") {
+    return new NoEncontradoError(
+      "The project, company, or requesting user no longer exists",
     );
   }
 
   if (error.code === "P0002") {
     return new NoEncontradoError("Project edit request not found");
+  }
+
+  if (error.code === "P0001") {
+    if (error.message === "PROJECT_EDIT_REQUEST_ALREADY_REVIEWED") {
+      return new ConflictoError(
+        "This project edit request has already been reviewed",
+      );
+    }
+
+    if (error.message === "ORIGINAL_PROJECT_NOT_FOUND") {
+      return new NoEncontradoError("Original project not found");
+    }
   }
 
   if (error.code === "22023") {

@@ -718,7 +718,7 @@ describe("API HTTP", () => {
 
       assert.equal(res.status, 403);
       assert.deepEqual(await res.json(), {
-        error: " You must be a company to list a project",
+        error: "You must be a company to list a project",
       });
     });
   });
@@ -733,6 +733,7 @@ describe("API HTTP", () => {
     };
 
     let cookie: string;
+    let cookieAdmin: string;
 
     const registrarCompany = async (email: string) => {
       const res = await post(
@@ -840,14 +841,85 @@ describe("API HTTP", () => {
 
       return { projectId, solicitud };
     };
-
+    //creating the admin directly through the in-memory authentication provider
     before(async () => {
       const email = "editar-proyectos@ejemplo.com";
 
       await registrarCompany(email);
       cookie = await iniciarSesion(email);
-    });
 
+      const emailAdmin = "editar-proyectos-admin@ejemplo.com";
+
+      await dependencias.auth.register(
+        Email.create(emailAdmin),
+        clave,
+        "admin",
+      );
+
+      cookieAdmin = await iniciarSesion(emailAdmin);
+    });
+    describe("GET /project-edit-requests", () => {
+      // admin receives pending requests, but not approved ones
+      it("lista las solicitudes pendientes para un admin", async () => {
+        const { solicitud: pendiente } = await crearSolicitud({
+          title: "Marketplace pendiente",
+        });
+
+        const { solicitud: aprobada } = await crearSolicitud({
+          title: "Marketplace aprobado",
+        });
+
+        const approveResponse = await fetch(
+          `${base}/project-edit-requests/${aprobada.id}/approve`,
+          {
+            method: "POST",
+            headers: { Cookie: cookieAdmin },
+          },
+        );
+
+        assert.equal(approveResponse.status, 200);
+
+        const res = await fetch(`${base}/project-edit-requests`, {
+          headers: { Cookie: cookieAdmin },
+        });
+
+        assert.equal(res.status, 200);
+
+        const requests = (await res.json()) as Array<{
+          id: string;
+          status: string;
+        }>;
+
+        assert.ok(
+          requests.some((request) => request.id === pendiente.id),
+          "The pending request should be included",
+        );
+
+        assert.ok(
+          !requests.some((request) => request.id === aprobada.id),
+          "The approved request should not be included",
+        );
+
+        assert.ok(
+          requests.every((request) => request.status === "pending"),
+          "The endpoint should only return pending requests",
+        );
+      });
+      //company user tries to access and receives 403 Forbidden
+      it("responde 403 si una empresa intenta listar las solicitudes", async () => {
+        const res = await fetch(`${base}/project-edit-requests`, {
+          headers: { Cookie: cookie },
+        });
+
+        assert.equal(res.status, 403);
+      });
+      // error 401 if user is not authenticated
+      it("responde 401 si no hay una sesión autenticada", async () => {
+        const res = await fetch(`${base}/project-edit-requests`);
+
+        assert.equal(res.status, 401);
+      });
+    });
     describe("POST /projects/:projectId/edit-requests", () => {
       it("crea una solicitud pendiente sin modificar el proyecto original", async () => {
         const { projectId, solicitud } = await crearSolicitud({
@@ -895,7 +967,7 @@ describe("API HTTP", () => {
           `${base}/project-edit-requests/${solicitud.id}/approve`,
           {
             method: "POST",
-            headers: { Cookie: cookie },
+            headers: { Cookie: cookieAdmin },
           },
         );
 
@@ -910,6 +982,26 @@ describe("API HTTP", () => {
 
         const proyecto = await obtenerProyecto(projectId);
         assert.equal(proyecto.title, "Marketplace aprobado");
+      });
+
+      it("responde 403 si una empresa intenta aprobar una solicitud", async () => {
+        const { projectId, solicitud } = await crearSolicitud(
+          { title: "Cambio no autorizado" },
+          "Proyecto original",
+        );
+
+        const res = await fetch(
+          `${base}/project-edit-requests/${solicitud.id}/approve`,
+          {
+            method: "POST",
+            headers: { Cookie: cookie },
+          },
+        );
+
+        assert.equal(res.status, 403);
+
+        const proyecto = await obtenerProyecto(projectId);
+        assert.equal(proyecto.title, "Proyecto original");
       });
 
       it("responde 401 si no hay una sesión autenticada", async () => {
@@ -940,7 +1032,7 @@ describe("API HTTP", () => {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Cookie: cookie,
+              Cookie: cookieAdmin,
             },
             body: JSON.stringify({
               reason: "Los cambios necesitan una revisión adicional",
@@ -963,6 +1055,26 @@ describe("API HTTP", () => {
 
         const proyecto = await obtenerProyecto(projectId);
         assert.equal(proyecto.title, "Proyecto para rechazar");
+      });
+      it("responde 403 si una empresa intenta rechazar una solicitud", async () => {
+        const { projectId, solicitud } = await crearSolicitud(
+          { title: "Cambio no autorizado" },
+          "Proyecto original",
+        );
+
+        const res = await fetch(
+          `${base}/project-edit-requests/${solicitud.id}/reject`,
+          {
+            method: "POST",
+            headers: { Cookie: cookie },
+            body: JSON.stringify({ reason: "Unauthorized" }),
+          },
+        );
+
+        assert.equal(res.status, 403);
+
+        const proyecto = await obtenerProyecto(projectId);
+        assert.equal(proyecto.title, "Proyecto original");
       });
     });
   });

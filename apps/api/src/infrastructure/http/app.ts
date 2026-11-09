@@ -40,6 +40,7 @@ export function crearApp(
   api.use(
     "/project-edit-requests",
     projectEditRequestRoutes(
+      casos.listPendingProjectEditRequests,
       casos.reviewProjectEditRequest,
       casos.authenticate,
     ),

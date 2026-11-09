@@ -7,7 +7,7 @@ export type ProjectEditRequestStatus = "pending" | "approved" | "rejected";
 export interface ProjectEditRequestProps {
   id: string;
   proposedProject: Project;
-  requestedByUserId: string;
+  requestedByUserId: string | null;
   status?: ProjectEditRequestStatus;
   createdAt?: Date;
   reviewedByUserId?: string | null;
@@ -19,7 +19,7 @@ export class ProjectEditRequest {
   private constructor(
     readonly id: string,
     readonly proposedProject: Project,
-    readonly requestedByUserId: string,
+    readonly requestedByUserId: string | null,
     readonly status: ProjectEditRequestStatus,
     readonly createdAt: Date,
     readonly reviewedByUserId: string | null,
@@ -32,8 +32,12 @@ export class ProjectEditRequest {
     const reviewedByUserId = props.reviewedByUserId ?? null;
     const reviewedAt = props.reviewedAt ?? null;
     const rejectionReason = props.rejectionReason?.trim() || null;
-
+    //catches invalid dates
     if (Number.isNaN(createdAt.getTime())) {
+      throw new ValidacionError("Invalid request creation date");
+    }
+
+    if (reviewedAt && Number.isNaN(reviewedAt.getTime())) {
       throw new ValidacionError("Invalid request review date");
     }
 
@@ -43,7 +47,7 @@ export class ProjectEditRequest {
       );
     }
 
-    if (status !== "pending" && (!reviewedByUserId || !reviewedAt)) {
+    if (status !== "pending" && !reviewedAt) {
       throw new ValidacionError(
         "A reviewed request must have review information",
       );
@@ -56,7 +60,9 @@ export class ProjectEditRequest {
     return new ProjectEditRequest(
       textoRequerido(props.id, "id"),
       props.proposedProject,
-      textoRequerido(props.requestedByUserId, "requestedByUserId"),
+      props.requestedByUserId === null
+        ? null
+        : textoRequerido(props.requestedByUserId, "requestedByUserId"),
       status,
       new Date(createdAt),
       reviewedByUserId

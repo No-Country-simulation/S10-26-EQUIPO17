@@ -16,9 +16,11 @@ describe("HTTP + Supabase integration: project edit requests", () => {
   let server: Server;
   let base: string;
   let cookie: string;
+  let adminCookie: string;
 
   let companyId: string | null = null;
   let userId: string | null = null;
+  let adminUserId: string | null = null;
 
   let cleanupSupabase: ReturnType<typeof crearClienteSupabase> | null = null;
 
@@ -196,6 +198,50 @@ describe("HTTP + Supabase integration: project edit requests", () => {
 
     assert.ok(accessCookie);
     cookie = accessCookie;
+    // Creates a separate admin using the Auth Admin API.
+    const adminEmail = `http-admin-${randomUUID()}@example.test`;
+    const adminPassword = "LocalAdminIntegration#2026";
+
+    const { data: adminData, error: adminError } =
+      await cleanupSupabase.auth.admin.createUser({
+        email: adminEmail,
+        password: adminPassword,
+        email_confirm: true,
+        app_metadata: { role: "admin" },
+      });
+
+    if (adminError) throw adminError;
+
+    assert.ok(adminData.user);
+    adminUserId = adminData.user.id;
+
+    // Obtains the admin's session through the HTTP login route.
+    const adminLogin = await fetch(`${base}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: adminEmail,
+        password: adminPassword,
+      }),
+    });
+    await comprobarEstado(adminLogin, 200);
+
+    // Diagnostic: verify Supabase returned the expected administrator.
+    const adminSession = (await adminLogin.json()) as {
+      user: { id: string; role: string | null };
+    };
+
+    assert.equal(adminSession.user.id, adminUserId);
+    assert.equal(adminSession.user.role, "admin");
+
+    // Extract the administrator's access cookie.
+    const adminAccessCookie = adminLogin.headers
+      .getSetCookie()
+      .find((value) => value.startsWith("access_token="))
+      ?.split(";")[0];
+
+    assert.ok(adminAccessCookie);
+    adminCookie = adminAccessCookie;
   });
 
   after(async () => {
@@ -221,8 +267,9 @@ describe("HTTP + Supabase integration: project edit requests", () => {
     }
 
     // removes the Auth user after its company and dependent records are gone.
-    if (cleanupSupabase && userId) {
-      const { error } = await cleanupSupabase.auth.admin.deleteUser(userId);
+    if (cleanupSupabase && adminUserId) {
+      const { error } =
+        await cleanupSupabase.auth.admin.deleteUser(adminUserId);
 
       if (error) errors.push(error);
     }
@@ -256,11 +303,26 @@ describe("HTTP + Supabase integration: project edit requests", () => {
       "Project after HTTP approval",
     );
 
-    const approval = await fetch(
+    // First, try to approve as the company.
+    const unauthorized = await fetch(
       `${base}/project-edit-requests/${request.id}/approve`,
       {
         method: "POST",
         headers: { Cookie: cookie },
+      },
+    );
+
+    assert.equal(unauthorized.status, 403);
+
+    const unchanged = await obtenerProyecto(projectId);
+    assert.equal(unchanged.title, "Project before HTTP approval");
+
+    // Then approve as the administrator.
+    const approval = await fetch(
+      `${base}/project-edit-requests/${request.id}/approve`,
+      {
+        method: "POST",
+        headers: { Cookie: adminCookie },
       },
     );
 
@@ -272,7 +334,7 @@ describe("HTTP + Supabase integration: project edit requests", () => {
     };
 
     assert.equal(reviewed.status, "approved");
-    assert.equal(reviewed.reviewedByUserId, userId);
+    assert.equal(reviewed.reviewedByUserId, adminUserId);
 
     const updated = await obtenerProyecto(projectId);
     assert.equal(updated.title, "Project after HTTP approval");
@@ -288,14 +350,26 @@ describe("HTTP + Supabase integration: project edit requests", () => {
       projectId,
       "Project that must not be applied",
     );
-
-    const rejection = await fetch(
+    const unauthorized = await fetch(
       `${base}/project-edit-requests/${request.id}/reject`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Cookie: cookie,
+        },
+        body: JSON.stringify({ reason: "Unauthorized" }),
+      },
+    );
+
+    assert.equal(unauthorized.status, 403);
+    const rejection = await fetch(
+      `${base}/project-edit-requests/${request.id}/reject`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: adminCookie,
         },
         body: JSON.stringify({ reason }),
       },

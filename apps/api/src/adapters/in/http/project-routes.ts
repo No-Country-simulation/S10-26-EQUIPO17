@@ -35,31 +35,21 @@ export function projectRoutes(
 
       const projectId = leerParametroRuta(req.params.projectId, "projectId");
 
+      const title = leerTextoOpcional(cuerpo, "title");
+      const description = leerTextoOpcional(cuerpo, "description");
+      const vertical = leerTextoOpcional(cuerpo, "vertical");
+      const businessSectors = leerTextosOpcional(cuerpo, "businessSectors");
+      const projectStage = leerTextoOpcional(cuerpo, "projectStage");
+
       const request = await submitProjectEditRequest.execute(
         usuarioAutenticado(res),
         projectId,
         {
-          ...(leerTextoOpcional(cuerpo, "title") === undefined
-            ? {}
-            : { title: leerTextoOpcional(cuerpo, "title") }),
-
-          ...(leerTextoOpcional(cuerpo, "description") === undefined
-            ? {}
-            : { description: leerTextoOpcional(cuerpo, "description") }),
-
-          ...(leerTextoOpcional(cuerpo, "vertical") === undefined
-            ? {}
-            : { vertical: leerTextoOpcional(cuerpo, "vertical") }),
-
-          ...(leerTextosOpcional(cuerpo, "businessSectors") === undefined
-            ? {}
-            : {
-                businessSectors: leerTextosOpcional(cuerpo, "businessSectors"),
-              }),
-
-          ...(leerTextoOpcional(cuerpo, "projectStage") === undefined
-            ? {}
-            : { projectStage: leerTextoOpcional(cuerpo, "projectStage") }),
+          ...(title === undefined ? {} : { title }),
+          ...(description === undefined ? {} : { description }),
+          ...(vertical === undefined ? {} : { vertical }),
+          ...(businessSectors === undefined ? {} : { businessSectors }),
+          ...(projectStage === undefined ? {} : { projectStage }),
         },
       );
 

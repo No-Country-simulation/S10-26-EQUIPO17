@@ -176,7 +176,20 @@ describe("SubmitProjectEditRequest", () => {
       ValidacionError,
     );
   });
+  it("rejects a request when its proposed values do not change the project", async () => {
+    await assert.rejects(
+      submitRequest.execute(owner, "project-1", {
+        title: " Marketplace ",
+      }),
+      {
+        name: ValidacionError.name,
+        message: "The proposed changes are identical to the current project",
+      },
+    );
 
+    const pending = await editRequests.findPendingByProjectId("project-1");
+    assert.equal(pending, null);
+  });
   it("rejects invalid proposed values", async () => {
     await assert.rejects(
       submitRequest.execute(owner, "project-1", { vertical: "Magic" }),

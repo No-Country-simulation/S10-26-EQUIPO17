@@ -83,6 +83,55 @@ describe("ProjectEditRequest", () => {
 
     assert.throws(() => rejected.reject("organizer-2"), ConflictoError);
   });
+  it("rejects an invalid creation date", () => {
+    assert.throws(
+      () =>
+        ProjectEditRequest.create({
+          id: "request-1",
+          proposedProject: createProject(),
+          requestedByUserId: "user-1",
+          createdAt: new Date("invalid"),
+        }),
+      {
+        name: ValidacionError.name,
+        message: "Invalid request creation date",
+      },
+    );
+  });
+
+  it("preserves a reviewed request after its requester and reviewer are deleted", () => {
+    const request = ProjectEditRequest.create({
+      id: "request-1",
+      proposedProject: createProject(),
+      requestedByUserId: null,
+      status: "approved",
+      reviewedByUserId: null,
+      reviewedAt: new Date("2026-11-09T12:00:00Z"),
+    });
+
+    assert.equal(request.status, "approved");
+    assert.equal(request.requestedByUserId, null);
+    assert.equal(request.reviewedByUserId, null);
+    assert.ok(request.reviewedAt);
+  });
+
+  it("rejects an invalid review date", () => {
+    assert.throws(
+      () =>
+        ProjectEditRequest.create({
+          id: "request-1",
+          proposedProject: createProject(),
+          requestedByUserId: "user-1",
+          status: "approved",
+          reviewedByUserId: "admin-1",
+          reviewedAt: new Date("invalid"),
+        }),
+      {
+        name: ValidacionError.name,
+        message: "Invalid request review date",
+      },
+    );
+  });
 
   it("rejects invalid review information", () => {
     assert.throws(

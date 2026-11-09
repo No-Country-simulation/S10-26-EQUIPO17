@@ -3,7 +3,7 @@ import { beforeEach, describe, it } from "node:test";
 import { InMemoryCompanyRepository } from "../../src/adapters/out/persistence/memory/in-memory-company-repository.js";
 import { InMemoryProjectRepository } from "../../src/adapters/out/persistence/memory/in-memory-project-repository.js";
 
-import { ListProjectsUserCase } from "../../src/application/use-cases/list-projects.js";
+import { ListProjectsUseCase } from "../../src/application/use-cases/list-projects.js";
 
 import { Company } from "../../src/domain/entities/company.js";
 import { Project } from "../../src/domain/entities/project.js";
@@ -24,7 +24,7 @@ describe("ListProjects", () => {
 
   let companies: InMemoryCompanyRepository;
   let projects: InMemoryProjectRepository;
-  let listProjects: ListProjectsUserCase;
+  let listProjects: ListProjectsUseCase;
 
   beforeEach(async () => {
     companies = new InMemoryCompanyRepository();
@@ -64,7 +64,7 @@ describe("ListProjects", () => {
       }),
     );
 
-    listProjects = new ListProjectsUserCase(companies, projects);
+    listProjects = new ListProjectsUseCase(companies, projects);
   });
 
   function createProject(id: string, companyId: string): Project {
