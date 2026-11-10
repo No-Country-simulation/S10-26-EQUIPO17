@@ -3,6 +3,7 @@ import type { Project } from "../../../domain/entities/project.js";
 import type { Session } from "../../../application/ports/in/log-in.js";
 import type { User } from "../../../domain/entities/user.js";
 import type { UserRole } from "../../../domain/value-objects/user-role.js";
+import type { ProjectEditRequest } from "../../../domain/entities/project-edit-request.js";
 
 // DTOs de salida. El password (aunque esté hasheado) nunca sale de la API.
 export interface UserResponse {
@@ -36,7 +37,7 @@ export const sessionToResponse = (session: Session): SessionResponse => ({
   user: { ...userToResponse(session.user), role: session.role },
 });
 
-export const companyToResponse =(company: Company): CompanyResponse => ({
+export const companyToResponse = (company: Company): CompanyResponse => ({
   id: company.id,
   firstName: company.firstName,
   lastName: company.lastName,
@@ -66,4 +67,32 @@ export const projectToResponse = (project: Project): ProjectResponse => ({
   vertical: project.vertical.getVertical(),
   businessSectors: project.businessSectors.map((sector) => sector.getSector()),
   projectStage: project.projectStage.getStage(),
+});
+//Convierte la entidad dominio para que sea legible en JSON
+export interface ProjectEditRequestResponse {
+  id: string;
+  projectId: string;
+  companyId: string;
+  requestedByUserId: string | null;
+  proposedProject: ProjectResponse;
+  status: string;
+  createdAt: string;
+  reviewedByUserId: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+}
+
+export const projectEditRequestToResponse = (
+  request: ProjectEditRequest,
+): ProjectEditRequestResponse => ({
+  id: request.id,
+  projectId: request.proposedProject.id,
+  companyId: request.proposedProject.companyId,
+  requestedByUserId: request.requestedByUserId,
+  proposedProject: projectToResponse(request.proposedProject),
+  status: request.status,
+  createdAt: request.createdAt.toISOString(),
+  reviewedByUserId: request.reviewedByUserId,
+  reviewedAt: request.reviewedAt?.toISOString() ?? null,
+  rejectionReason: request.rejectionReason,
 });

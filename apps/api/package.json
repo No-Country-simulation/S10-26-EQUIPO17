@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
     "typecheck": "tsc",
-    "test": "node --import tsx --test \"test/**/*.test.ts\""
+    "test": "node --import tsx --test \"test/**/*.test.ts\"",
+    "test:integration": "node --env-file-if-exists=../../.env.integration --import tsx --test \"integration/**/*.test.ts\""
   },
   "keywords": [],
   "author": "",

@@ -10,6 +10,9 @@ import {
 } from "../../src/infrastructure/container.js";
 import type { Config } from "../../src/infrastructure/config/env.js";
 import { crearApp } from "../../src/infrastructure/http/app.js";
+import { BusinessSector } from "../../src/domain/value-objects/business-sector.js";
+import { OrganizationType } from "../../src/domain/value-objects/organization-type.js";
+import { resolve } from "node:path";
 
 // Levanta la app real con los adaptadores en memoria y le pega por HTTP.
 describe("API HTTP", () => {
@@ -61,7 +64,10 @@ describe("API HTTP", () => {
   });
 
   it("solo expone las rutas bajo /api, que es lo que el proxy de Vercel reenvía", async () => {
-    const credenciales = JSON.stringify({ email: "a@ejemplo.com", password: "clave-segura" });
+    const credenciales = JSON.stringify({
+      email: "a@ejemplo.com",
+      password: "clave-segura",
+    });
     for (const ruta of ["/auth/login", "/companies/register"]) {
       const res = await fetch(`${origen}${ruta}`, {
         method: "POST",
@@ -102,7 +108,10 @@ describe("API HTTP", () => {
     it("crea el usuario y la company en una sola request", async () => {
       const res = await post("/companies/register", JSON.stringify(registro));
       assert.equal(res.status, 201);
-      const company = (await res.json()) as { id: string; user: { id: string } };
+      const company = (await res.json()) as {
+        id: string;
+        user: { id: string };
+      };
 
       assert.deepEqual(company, {
         id: company.id,
@@ -119,17 +128,26 @@ describe("API HTTP", () => {
 
     it("responde 400 ante datos de company inválidos sin dejar el email tomado", async () => {
       const datos = { ...registro, email: "invalido@ejemplo.com" };
-      const res = await post("/companies/register", JSON.stringify({ ...datos, country: "Narnia" }));
+      const res = await post(
+        "/companies/register",
+        JSON.stringify({ ...datos, country: "Narnia" }),
+      );
       assert.equal(res.status, 400);
       assert.deepEqual(await res.json(), { error: "Invalid country: Narnia" });
 
-      assert.equal((await post("/companies/register", JSON.stringify(datos))).status, 201);
+      assert.equal(
+        (await post("/companies/register", JSON.stringify(datos))).status,
+        201,
+      );
     });
 
     it("responde 400 ante un country, businessSector u organizationType inválido", async () => {
       const cases = [
         { override: { country: "Narnia" }, error: "Invalid country: Narnia" },
-        { override: { businessSector: "Magic" }, error: "Invalid business sector: Magic" },
+        {
+          override: { businessSector: "Magic" },
+          error: "Invalid business sector: Magic",
+        },
         {
           override: { organizationType: "Government" },
           error: "Invalid organization type: Government",
@@ -137,7 +155,10 @@ describe("API HTTP", () => {
       ];
 
       for (const { override, error } of cases) {
-        const res = await post("/companies/register", JSON.stringify({ ...registro, ...override }));
+        const res = await post(
+          "/companies/register",
+          JSON.stringify({ ...registro, ...override }),
+        );
         assert.equal(res.status, 400, JSON.stringify(override));
         assert.deepEqual(await res.json(), { error });
       }
@@ -145,29 +166,47 @@ describe("API HTTP", () => {
 
     it("responde 400 si organizationType no es un texto o faltan campos", async () => {
       const sinTexto = { ...registro, organizationType: ["StartUp"] };
-      assert.equal((await post("/companies/register", JSON.stringify(sinTexto))).status, 400);
+      assert.equal(
+        (await post("/companies/register", JSON.stringify(sinTexto))).status,
+        400,
+      );
       const soloNombre = JSON.stringify({ companyName: "Acme" });
       assert.equal((await post("/companies/register", soloNombre)).status, 400);
     });
 
     it("responde 400 ante JSON mal formado", async () => {
-      assert.equal((await post("/companies/register", "{ no es json")).status, 400);
+      assert.equal(
+        (await post("/companies/register", "{ no es json")).status,
+        400,
+      );
     });
 
     it("responde 409 si el email ya está registrado", async () => {
       const datos = { ...registro, email: "repetido@ejemplo.com" };
-      assert.equal((await post("/companies/register", JSON.stringify(datos))).status, 201);
-      assert.equal((await post("/companies/register", JSON.stringify(datos))).status, 409);
+      assert.equal(
+        (await post("/companies/register", JSON.stringify(datos))).status,
+        201,
+      );
+      assert.equal(
+        (await post("/companies/register", JSON.stringify(datos))).status,
+        409,
+      );
     });
 
     it("responde 400 si falta el email o la contraseña", async () => {
       const { password: _password, ...sinClave } = registro;
-      assert.equal((await post("/companies/register", JSON.stringify(sinClave))).status, 400);
+      assert.equal(
+        (await post("/companies/register", JSON.stringify(sinClave))).status,
+        400,
+      );
     });
   });
 
   describe("POST /auth/login", () => {
-    const credenciales = { email: "login@ejemplo.com", password: "clave-segura" };
+    const credenciales = {
+      email: "login@ejemplo.com",
+      password: "clave-segura",
+    };
     let userId: string;
 
     before(async () => {
@@ -197,7 +236,10 @@ describe("API HTTP", () => {
 
       const [access = "", refresh = ""] = res.headers.getSetCookie();
       assert.match(access, /^access_token=[^;]+; Max-Age=3600; Path=\/api; /);
-      assert.match(refresh, /^refresh_token=[^;]+; Max-Age=\d+; Path=\/api\/auth; /);
+      assert.match(
+        refresh,
+        /^refresh_token=[^;]+; Max-Age=\d+; Path=\/api\/auth; /,
+      );
       for (const cookie of [access, refresh]) {
         assert.match(cookie, /; HttpOnly/);
         assert.match(cookie, /; Secure/);
@@ -212,19 +254,27 @@ describe("API HTTP", () => {
       ]) {
         const res = await post("/auth/login", JSON.stringify(body));
         assert.equal(res.status, 401);
-        assert.deepEqual(await res.json(), { error: "Invalid email or password" });
+        assert.deepEqual(await res.json(), {
+          error: "Invalid email or password",
+        });
         assert.deepEqual(res.headers.getSetCookie(), []);
       }
     });
 
     it("responde 400 si falta la contraseña", async () => {
-      const res = await post("/auth/login", JSON.stringify({ email: credenciales.email }));
+      const res = await post(
+        "/auth/login",
+        JSON.stringify({ email: credenciales.email }),
+      );
       assert.equal(res.status, 400);
     });
   });
 
   describe("POST /auth/refresh", () => {
-    const credenciales = { email: "refresh@ejemplo.com", password: "clave-segura" };
+    const credenciales = {
+      email: "refresh@ejemplo.com",
+      password: "clave-segura",
+    };
     let userId: string;
 
     before(async () => {
@@ -245,7 +295,10 @@ describe("API HTTP", () => {
 
     /** Logs in and returns the refresh_token, as the browser holds it. */
     const iniciarSesion = async () =>
-      valorDeCookie(await post("/auth/login", JSON.stringify(credenciales)), "refresh_token");
+      valorDeCookie(
+        await post("/auth/login", JSON.stringify(credenciales)),
+        "refresh_token",
+      );
 
     const refrescar = (cookie?: string) =>
       fetch(`${base}/auth/refresh`, {
@@ -255,8 +308,14 @@ describe("API HTTP", () => {
 
     const assertCookiesBorradas = (res: Response) => {
       const [access = "", refresh = ""] = res.headers.getSetCookie();
-      assert.match(access, /^access_token=; Path=\/api; Expires=Thu, 01 Jan 1970/);
-      assert.match(refresh, /^refresh_token=; Path=\/api\/auth; Expires=Thu, 01 Jan 1970/);
+      assert.match(
+        access,
+        /^access_token=; Path=\/api; Expires=Thu, 01 Jan 1970/,
+      );
+      assert.match(
+        refresh,
+        /^refresh_token=; Path=\/api\/auth; Expires=Thu, 01 Jan 1970/,
+      );
       for (const cookie of [access, refresh]) {
         assert.match(cookie, /; HttpOnly/);
         assert.match(cookie, /; Secure/);
@@ -276,7 +335,10 @@ describe("API HTTP", () => {
 
       const [access = "", refresh = ""] = res.headers.getSetCookie();
       assert.match(access, /^access_token=[^;]+; Max-Age=3600; Path=\/api; /);
-      assert.match(refresh, /^refresh_token=[^;]+; Max-Age=2592000; Path=\/api\/auth; /);
+      assert.match(
+        refresh,
+        /^refresh_token=[^;]+; Max-Age=2592000; Path=\/api\/auth; /,
+      );
       for (const cookie of [access, refresh]) {
         assert.match(cookie, /; HttpOnly/);
         assert.match(cookie, /; Secure/);
@@ -284,7 +346,9 @@ describe("API HTTP", () => {
       }
       assert.notEqual(valorDeCookie(res, "refresh_token"), anterior);
       assert.deepEqual(
-        await dependencias.auth.verifyAccessToken(valorDeCookie(res, "access_token")),
+        await dependencias.auth.verifyAccessToken(
+          valorDeCookie(res, "access_token"),
+        ),
         { userId, role: "company" },
       );
     });
@@ -300,7 +364,9 @@ describe("API HTTP", () => {
     it("funciona sin access token y encadena con el refresh token rotado", async () => {
       const primero = await refrescar(`refresh_token=${await iniciarSesion()}`);
 
-      const segundo = await refrescar(`refresh_token=${valorDeCookie(primero, "refresh_token")}`);
+      const segundo = await refrescar(
+        `refresh_token=${valorDeCookie(primero, "refresh_token")}`,
+      );
 
       assert.equal(segundo.status, 200);
     });
@@ -314,7 +380,11 @@ describe("API HTTP", () => {
     });
 
     it("responde 401 y borra las cookies ante un token inválido o que no es texto", async () => {
-      for (const valor of ["desconocido", "", encodeURIComponent('j:{"a":1}')]) {
+      for (const valor of [
+        "desconocido",
+        "",
+        encodeURIComponent('j:{"a":1}'),
+      ]) {
         const res = await refrescar(`refresh_token=${valor}`);
 
         assert.equal(res.status, 401, valor);
@@ -359,7 +429,10 @@ describe("API HTTP", () => {
 
     /** Logs in and returns the access_token cookie, as the browser would send it back. */
     const iniciarSesion = async (email: string) => {
-      const res = await post("/auth/login", JSON.stringify({ email, password: clave }));
+      const res = await post(
+        "/auth/login",
+        JSON.stringify({ email, password: clave }),
+      );
       const [access = ""] = res.headers.getSetCookie();
       return access.split(";")[0] ?? "";
     };
@@ -367,7 +440,10 @@ describe("API HTTP", () => {
     const subir = (body: unknown, cookies?: string) =>
       fetch(`${base}/projects`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(cookies ? { Cookie: cookies } : {}) },
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
         body: JSON.stringify(body),
       });
 
@@ -401,10 +477,16 @@ describe("API HTTP", () => {
     });
 
     it("ignora un companyId enviado en el body", async () => {
-      const res = await subir({ ...proyecto, companyId: "otra-company" }, cookie);
+      const res = await subir(
+        { ...proyecto, companyId: "otra-company" },
+        cookie,
+      );
 
       assert.equal(res.status, 201);
-      assert.equal(((await res.json()) as { companyId: string }).companyId, companyId);
+      assert.equal(
+        ((await res.json()) as { companyId: string }).companyId,
+        companyId,
+      );
     });
 
     it("responde 401 sin la cookie de sesión", async () => {
@@ -417,7 +499,9 @@ describe("API HTTP", () => {
       for (const invalida of ["access_token=inventado", "access_token=j:{}"]) {
         const res = await subir(proyecto, invalida);
         assert.equal(res.status, 401, invalida);
-        assert.deepEqual(await res.json(), { error: "Authentication required" });
+        assert.deepEqual(await res.json(), {
+          error: "Authentication required",
+        });
       }
     });
 
@@ -428,7 +512,9 @@ describe("API HTTP", () => {
       const res = await subir(proyecto, await iniciarSesion(email));
 
       assert.equal(res.status, 403);
-      assert.deepEqual(await res.json(), { error: "Only companies can upload projects" });
+      assert.deepEqual(await res.json(), {
+        error: "Only companies can upload projects",
+      });
     });
 
     it("responde 403 si el usuario tiene el rol pero no su company", async () => {
@@ -443,9 +529,18 @@ describe("API HTTP", () => {
     it("responde 400 ante valores inválidos", async () => {
       const cases = [
         { override: { vertical: "Magic" }, error: "Invalid vertical: Magic" },
-        { override: { projectStage: "Beta" }, error: "Invalid project stage: Beta" },
-        { override: { businessSectors: ["Magic"] }, error: "Invalid business sector: Magic" },
-        { override: { businessSectors: [] }, error: "At least one business sector is required" },
+        {
+          override: { projectStage: "Beta" },
+          error: "Invalid project stage: Beta",
+        },
+        {
+          override: { businessSectors: ["Magic"] },
+          error: "Invalid business sector: Magic",
+        },
+        {
+          override: { businessSectors: [] },
+          error: "At least one business sector is required",
+        },
       ];
 
       for (const { override, error } of cases) {
@@ -462,8 +557,525 @@ describe("API HTTP", () => {
         { ...proyecto, businessSectors: "IT" },
         { ...proyecto, businessSectors: [1] },
       ]) {
-        assert.equal((await subir(body, cookie)).status, 400, JSON.stringify(body));
+        assert.equal(
+          (await subir(body, cookie)).status,
+          400,
+          JSON.stringify(body),
+        );
       }
+    });
+  });
+  describe("GET /projects", () => {
+    const clave = "clave-segura";
+
+    const proyecto = {
+      title: "Marketplace",
+      description: "A platform to connect buyers and sellers",
+      vertical: "E-commerce",
+      businessSectors: ["Product", "IT"],
+      projectStage: "MVP",
+    };
+
+    const registrarCompany = async (email: string, companyName: string) => {
+      const res = await post(
+        "/companies/register",
+        JSON.stringify({
+          email,
+          password: clave,
+          firstName: "Ana",
+          lastName: "García",
+          jobPosition: "CTO",
+          companyName,
+          country: "Argentina",
+          businessSector: "IT",
+          organizationType: "Educational Institute",
+        }),
+      );
+
+      assert.equal(res.status, 201);
+      return (await res.json()) as { id: string };
+    };
+
+    const iniciarSesion = async (email: string): Promise<string> => {
+      const res = await post(
+        "/auth/login",
+        JSON.stringify({ email, password: clave }),
+      );
+
+      assert.equal(res.status, 200);
+
+      const cookie = res.headers
+        .getSetCookie()
+        .find((value) => value.startsWith("access_token="))
+        ?.split(";")[0];
+
+      assert.ok(cookie);
+      return cookie;
+    };
+
+    const subirProyecto = async (cookie: string, title: string) => {
+      const res = await fetch(`${base}/projects`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: cookie,
+        },
+        body: JSON.stringify({ ...proyecto, title }),
+      });
+
+      assert.equal(res.status, 201);
+      return (await res.json()) as { id: string };
+    };
+
+    const listarProyectos = (cookie?: string) =>
+      fetch(`${base}/projects`, {
+        headers: cookie ? { Cookie: cookie } : {},
+      });
+
+    it("responde 401 sin una sesión autenticada", async () => {
+      const res = await listarProyectos();
+
+      assert.equal(res.status, 401);
+      assert.deepEqual(await res.json(), {
+        error: "Authentication required",
+      });
+    });
+
+    it("devuelve únicamente los proyectos de la company autenticada", async () => {
+      const companyA = await registrarCompany(
+        "listar-a@ejemplo.com",
+        "Company A",
+      );
+      const companyB = await registrarCompany(
+        "listar-b@ejemplo.com",
+        "Company B",
+      );
+      const cookieA = await iniciarSesion("listar-a@ejemplo.com");
+      const cookieB = await iniciarSesion("listar-b@ejemplo.com");
+
+      const projectA = await subirProyecto(cookieA, "Project A");
+      const projectB = await subirProyecto(cookieB, "Project B");
+
+      const res = await listarProyectos(cookieA);
+
+      assert.equal(res.status, 200);
+
+      const resultado = (await res.json()) as Array<{
+        id: string;
+        companyId: string;
+        title: string;
+      }>;
+
+      assert.deepEqual(
+        resultado.map(({ id, companyId, title }) => ({
+          id,
+          companyId,
+          title,
+        })),
+        [
+          {
+            id: projectA.id,
+            companyId: companyA.id,
+            title: "Project A",
+          },
+        ],
+      );
+
+      assert.ok(!resultado.some((project) => project.id === projectB.id));
+    });
+
+    it("devuelve una lista vacía cuando la company no tiene proyectos", async () => {
+      await registrarCompany("listar-vacio@ejemplo.com", "Empty Company");
+
+      const cookie = await iniciarSesion("listar-vacio@ejemplo.com");
+      const res = await listarProyectos(cookie);
+
+      assert.equal(res.status, 200);
+      assert.deepEqual(await res.json(), []);
+    });
+
+    it("responde 403 cuando el usuario no tiene el rol company", async () => {
+      const email = "listar-sin-rol@ejemplo.com";
+
+      await dependencias.auth.register(Email.create(email), clave);
+
+      const cookie = await iniciarSesion(email);
+      const res = await listarProyectos(cookie);
+
+      assert.equal(res.status, 403);
+      assert.deepEqual(await res.json(), {
+        error: "Only companies can list projects",
+      });
+    });
+
+    it("responde 403 cuando el usuario no tiene una company asociada", async () => {
+      const email = "listar-sin-company@ejemplo.com";
+
+      await dependencias.auth.register(Email.create(email), clave, "company");
+
+      const cookie = await iniciarSesion(email);
+      const res = await listarProyectos(cookie);
+
+      assert.equal(res.status, 403);
+      assert.deepEqual(await res.json(), {
+        error: "You must be a company to list a project",
+      });
+    });
+  });
+  describe("solicitudes de edición de proyectos", () => {
+    const clave = "clave-segura";
+    const proyectoBase = {
+      title: "Marketplace",
+      description: "A platform to connect buyers and sellers",
+      vertical: "E-commerce",
+      businessSectors: ["Product", "IT"],
+      projectStage: "MVP",
+    };
+
+    let cookie: string;
+    let cookieAdmin: string;
+
+    const registrarCompany = async (email: string) => {
+      const res = await post(
+        "/companies/register",
+        JSON.stringify({
+          email,
+          password: clave,
+          firstName: "Ana",
+          lastName: "García",
+          jobPosition: "CTO",
+          companyName: "Acme",
+          country: "Argentina",
+          businessSector: "IT",
+          organizationType: "Educational Institute",
+        }),
+      );
+
+      assert.equal(res.status, 201);
+    };
+
+    const iniciarSesion = async (email: string): Promise<string> => {
+      const res = await post(
+        "/auth/login",
+        JSON.stringify({ email, password: clave }),
+      );
+
+      assert.equal(res.status, 200);
+
+      const access = res.headers
+        .getSetCookie()
+        .find((value) => value.startsWith("access_token="))
+        ?.split(";")[0];
+
+      assert.ok(access);
+      return access;
+    };
+
+    const subirProyecto = async (title = proyectoBase.title) => {
+      const res = await fetch(`${base}/projects`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: cookie,
+        },
+        body: JSON.stringify({ ...proyectoBase, title }),
+      });
+
+      assert.equal(res.status, 201);
+
+      const proyecto = (await res.json()) as { id: string };
+      return proyecto.id;
+    };
+
+    const solicitarEdicion = (
+      projectId: string,
+      cambios: unknown,
+      cookies?: string,
+    ) =>
+      fetch(`${base}/projects/${projectId}/edit-requests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        body: JSON.stringify(cambios),
+      });
+
+    const obtenerProyecto = async (projectId: string) => {
+      const res = await fetch(`${base}/projects`, {
+        headers: { Cookie: cookie },
+      });
+
+      assert.equal(res.status, 200);
+
+      const proyectos = (await res.json()) as Array<{
+        id: string;
+        title: string;
+        description: string;
+        vertical: string;
+        businessSectors: string[];
+        projectStage: string;
+      }>;
+
+      const proyecto = proyectos.find((item) => item.id === projectId);
+      assert.ok(proyecto, `No se encontró el proyecto ${projectId}`);
+
+      return proyecto;
+    };
+
+    const crearSolicitud = async (
+      cambios: unknown,
+      title = proyectoBase.title,
+    ) => {
+      const projectId = await subirProyecto(title);
+      const res = await solicitarEdicion(projectId, cambios, cookie);
+
+      assert.equal(res.status, 201);
+
+      const solicitud = (await res.json()) as {
+        id: string;
+        projectId: string;
+        status: string;
+        proposedProject: { title: string };
+      };
+
+      return { projectId, solicitud };
+    };
+    //creating the admin directly through the in-memory authentication provider
+    before(async () => {
+      const email = "editar-proyectos@ejemplo.com";
+
+      await registrarCompany(email);
+      cookie = await iniciarSesion(email);
+
+      const emailAdmin = "editar-proyectos-admin@ejemplo.com";
+
+      await dependencias.auth.register(
+        Email.create(emailAdmin),
+        clave,
+        "admin",
+      );
+
+      cookieAdmin = await iniciarSesion(emailAdmin);
+    });
+    describe("GET /project-edit-requests", () => {
+      // admin receives pending requests, but not approved ones
+      it("lista las solicitudes pendientes para un admin", async () => {
+        const { solicitud: pendiente } = await crearSolicitud({
+          title: "Marketplace pendiente",
+        });
+
+        const { solicitud: aprobada } = await crearSolicitud({
+          title: "Marketplace aprobado",
+        });
+
+        const approveResponse = await fetch(
+          `${base}/project-edit-requests/${aprobada.id}/approve`,
+          {
+            method: "POST",
+            headers: { Cookie: cookieAdmin },
+          },
+        );
+
+        assert.equal(approveResponse.status, 200);
+
+        const res = await fetch(`${base}/project-edit-requests`, {
+          headers: { Cookie: cookieAdmin },
+        });
+
+        assert.equal(res.status, 200);
+
+        const requests = (await res.json()) as Array<{
+          id: string;
+          status: string;
+        }>;
+
+        assert.ok(
+          requests.some((request) => request.id === pendiente.id),
+          "The pending request should be included",
+        );
+
+        assert.ok(
+          !requests.some((request) => request.id === aprobada.id),
+          "The approved request should not be included",
+        );
+
+        assert.ok(
+          requests.every((request) => request.status === "pending"),
+          "The endpoint should only return pending requests",
+        );
+      });
+      //company user tries to access and receives 403 Forbidden
+      it("responde 403 si una empresa intenta listar las solicitudes", async () => {
+        const res = await fetch(`${base}/project-edit-requests`, {
+          headers: { Cookie: cookie },
+        });
+
+        assert.equal(res.status, 403);
+      });
+      // error 401 if user is not authenticated
+      it("responde 401 si no hay una sesión autenticada", async () => {
+        const res = await fetch(`${base}/project-edit-requests`);
+
+        assert.equal(res.status, 401);
+      });
+    });
+    describe("POST /projects/:projectId/edit-requests", () => {
+      it("crea una solicitud pendiente sin modificar el proyecto original", async () => {
+        const { projectId, solicitud } = await crearSolicitud({
+          title: "Marketplace actualizado",
+        });
+
+        assert.equal(solicitud.projectId, projectId);
+        assert.equal(solicitud.status, "pending");
+        assert.equal(
+          solicitud.proposedProject.title,
+          "Marketplace actualizado",
+        );
+
+        const original = await obtenerProyecto(projectId);
+        assert.equal(original.title, "Marketplace");
+      });
+
+      it("responde 401 si no hay una sesión autenticada", async () => {
+        const projectId = await subirProyecto("Proyecto sin sesión");
+
+        const res = await solicitarEdicion(projectId, {
+          title: "Nuevo título",
+        });
+
+        assert.equal(res.status, 401);
+      });
+
+      it("responde 400 si no se propone ningún cambio", async () => {
+        const projectId = await subirProyecto("Proyecto sin cambios");
+
+        const res = await solicitarEdicion(projectId, {}, cookie);
+
+        assert.equal(res.status, 400);
+      });
+    });
+
+    describe("POST /project-edit-requests/:id/approve", () => {
+      it("aprueba la solicitud y actualiza el proyecto", async () => {
+        const { projectId, solicitud } = await crearSolicitud(
+          { title: "Marketplace aprobado" },
+          "Proyecto para aprobar",
+        );
+
+        const res = await fetch(
+          `${base}/project-edit-requests/${solicitud.id}/approve`,
+          {
+            method: "POST",
+            headers: { Cookie: cookieAdmin },
+          },
+        );
+
+        assert.equal(res.status, 200);
+
+        const revisada = (await res.json()) as {
+          status: string;
+          proposedProject: { title: string };
+        };
+
+        assert.equal(revisada.status, "approved");
+
+        const proyecto = await obtenerProyecto(projectId);
+        assert.equal(proyecto.title, "Marketplace aprobado");
+      });
+
+      it("responde 403 si una empresa intenta aprobar una solicitud", async () => {
+        const { projectId, solicitud } = await crearSolicitud(
+          { title: "Cambio no autorizado" },
+          "Proyecto original",
+        );
+
+        const res = await fetch(
+          `${base}/project-edit-requests/${solicitud.id}/approve`,
+          {
+            method: "POST",
+            headers: { Cookie: cookie },
+          },
+        );
+
+        assert.equal(res.status, 403);
+
+        const proyecto = await obtenerProyecto(projectId);
+        assert.equal(proyecto.title, "Proyecto original");
+      });
+
+      it("responde 401 si no hay una sesión autenticada", async () => {
+        const { solicitud } = await crearSolicitud(
+          { title: "Marketplace actualizado" },
+          "Proyecto para aprobación sin sesión",
+        );
+
+        const res = await fetch(
+          `${base}/project-edit-requests/${solicitud.id}/approve`,
+          { method: "POST" },
+        );
+
+        assert.equal(res.status, 401);
+      });
+    });
+
+    describe("POST /project-edit-requests/:id/reject", () => {
+      it("rechaza la solicitud sin modificar el proyecto original", async () => {
+        const { projectId, solicitud } = await crearSolicitud(
+          { title: "Marketplace rechazado" },
+          "Proyecto para rechazar",
+        );
+
+        const res = await fetch(
+          `${base}/project-edit-requests/${solicitud.id}/reject`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Cookie: cookieAdmin,
+            },
+            body: JSON.stringify({
+              reason: "Los cambios necesitan una revisión adicional",
+            }),
+          },
+        );
+
+        assert.equal(res.status, 200);
+
+        const revisada = (await res.json()) as {
+          status: string;
+          rejectionReason: string | null;
+        };
+
+        assert.equal(revisada.status, "rejected");
+        assert.equal(
+          revisada.rejectionReason,
+          "Los cambios necesitan una revisión adicional",
+        );
+
+        const proyecto = await obtenerProyecto(projectId);
+        assert.equal(proyecto.title, "Proyecto para rechazar");
+      });
+      it("responde 403 si una empresa intenta rechazar una solicitud", async () => {
+        const { projectId, solicitud } = await crearSolicitud(
+          { title: "Cambio no autorizado" },
+          "Proyecto original",
+        );
+
+        const res = await fetch(
+          `${base}/project-edit-requests/${solicitud.id}/reject`,
+          {
+            method: "POST",
+            headers: { Cookie: cookie },
+            body: JSON.stringify({ reason: "Unauthorized" }),
+          },
+        );
+
+        assert.equal(res.status, 403);
+
+        const proyecto = await obtenerProyecto(projectId);
+        assert.equal(proyecto.title, "Proyecto original");
+      });
     });
   });
 });

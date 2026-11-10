@@ -1,4 +1,4 @@
-const USER_ROLES = ["company"] as const;
+const USER_ROLES = ["company", "admin"] as const;
 
 /** What a user is in the platform; decides which features the frontend shows. */
 export type UserRole = (typeof USER_ROLES)[number];
