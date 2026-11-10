@@ -361,6 +361,70 @@ describe("SupabaseAuthProvider.verifyAccessToken", () => {
   });
 });
 
+describe("SupabaseAuthProvider.logOut", () => {
+  const adminWith = (error: Error | null, calls: unknown[][] = []) =>
+    ({
+      auth: {
+        admin: {
+          signOut: async (...args: unknown[]) => {
+            calls.push(args);
+            return { data: null, error };
+          },
+        },
+      },
+    }) as unknown as SupabaseClient;
+
+  it("revokes only the session of the token, on the shared admin client", async () => {
+    const calls: unknown[][] = [];
+    const auth = providerWith(adminWith(null, calls));
+
+    await auth.logOut("token");
+
+    assert.deepEqual(calls, [["token", "local"]]);
+  });
+
+  it("translates a token Supabase refuses", async () => {
+    // Measured against local Supabase: expired, tampered, revoked and deleted-user tokens.
+    const refusals = [
+      new AuthApiError("invalid JWT", 403, "bad_jwt"),
+      new AuthSessionMissingError(),
+      new AuthApiError("user gone", 403, "user_not_found"),
+      new AuthApiError("unauthorized", 401, "no_authorization"),
+    ];
+
+    for (const error of refusals) {
+      const auth = providerWith(adminWith(error));
+      await assert.rejects(auth.logOut("token"), NoAutenticadoError, error.message);
+    }
+  });
+
+  it("refuses a token that cannot travel in a header without calling Supabase", async () => {
+    const calls: unknown[][] = [];
+    const auth = providerWith(adminWith(null, calls));
+
+    for (const token of ["abc\ndef", "€", "abc def"]) {
+      await assert.rejects(auth.logOut(token), NoAutenticadoError, token);
+    }
+    assert.deepEqual(calls, []);
+  });
+
+  it("propagates an outage instead of reporting the session as closed", async () => {
+    const outages = [
+      new AuthRetryableFetchError("fetch failed", 0),
+      new AuthApiError("boom", 500, "unexpected_failure"),
+    ];
+
+    for (const outage of outages) {
+      const auth = providerWith(adminWith(outage));
+      await assert.rejects(auth.logOut("token"), (error: Error) => {
+        assert.ok(!(error instanceof NoAutenticadoError));
+        assert.match(error.message, new RegExp(outage.message));
+        return true;
+      });
+    }
+  });
+});
+
 describe("SupabaseAuthProvider", () => {
   const email = Email.create("ana@ejemplo.com");
 

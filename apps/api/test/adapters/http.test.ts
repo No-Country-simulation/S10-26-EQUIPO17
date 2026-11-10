@@ -46,6 +46,31 @@ describe("API HTTP", () => {
       body,
     });
 
+  /** Value of a cookie in a response's Set-Cookie headers. */
+  const valorDeCookie = (res: Response, nombre: string) =>
+    res.headers
+      .getSetCookie()
+      .find((cookie) => cookie.startsWith(`${nombre}=`))
+      ?.split(";")[0]
+      ?.slice(nombre.length + 1) ?? "";
+
+  const assertCookiesBorradas = (res: Response) => {
+    const [access = "", refresh = ""] = res.headers.getSetCookie();
+    assert.match(
+      access,
+      /^access_token=; Path=\/api; Expires=Thu, 01 Jan 1970/,
+    );
+    assert.match(
+      refresh,
+      /^refresh_token=; Path=\/api\/auth; Expires=Thu, 01 Jan 1970/,
+    );
+    for (const cookie of [access, refresh]) {
+      assert.match(cookie, /; HttpOnly/);
+      assert.match(cookie, /; Secure/);
+      assert.match(cookie, /; SameSite=Lax/);
+    }
+  };
+
   it("no habilita CORS: la web llega por el proxy de Vite o Vercel, en el mismo origen", async () => {
     const otroOrigen = { Origin: "http://localhost:5173" };
     const preflight = await fetch(`${base}/auth/login`, {
@@ -285,14 +310,6 @@ describe("API HTTP", () => {
       );
     });
 
-    /** Value of a cookie in a response's Set-Cookie headers. */
-    const valorDeCookie = (res: Response, nombre: string) =>
-      res.headers
-        .getSetCookie()
-        .find((cookie) => cookie.startsWith(`${nombre}=`))
-        ?.split(";")[0]
-        ?.slice(nombre.length + 1) ?? "";
-
     /** Logs in and returns the refresh_token, as the browser holds it. */
     const iniciarSesion = async () =>
       valorDeCookie(
@@ -412,6 +429,96 @@ describe("API HTTP", () => {
 
       assert.equal(res.status, 500);
       assert.deepEqual(res.headers.getSetCookie(), []);
+    });
+  });
+
+  describe("POST /auth/logout", () => {
+    const credenciales = {
+      email: "logout@ejemplo.com",
+      password: "clave-segura",
+    };
+
+    before(async () => {
+      await dependencias.auth.register(
+        Email.create(credenciales.email),
+        credenciales.password,
+        "company",
+      );
+    });
+
+    /** Logs in and returns both cookies, as the browser sends them to /api/auth. */
+    const iniciarSesion = async () => {
+      const res = await post("/auth/login", JSON.stringify(credenciales));
+      return {
+        accessToken: valorDeCookie(res, "access_token"),
+        refreshToken: valorDeCookie(res, "refresh_token"),
+      };
+    };
+
+    const salir = (cookie?: string) =>
+      fetch(`${base}/auth/logout`, {
+        method: "POST",
+        headers: cookie ? { Cookie: cookie } : {},
+      });
+
+    it("responde 204, borra las dos cookies y revoca la sesión", async () => {
+      const { accessToken, refreshToken } = await iniciarSesion();
+
+      const res = await salir(
+        `access_token=${accessToken}; refresh_token=${refreshToken}`,
+      );
+
+      assert.equal(res.status, 204);
+      assert.equal(await res.text(), "");
+      assertCookiesBorradas(res);
+      await assert.rejects(dependencias.auth.verifyAccessToken(accessToken));
+      await assert.rejects(dependencias.auth.refreshSession(refreshToken));
+    });
+
+    it("responde 204 al cerrar dos veces la misma sesión", async () => {
+      const { accessToken, refreshToken } = await iniciarSesion();
+      const cookies = `access_token=${accessToken}; refresh_token=${refreshToken}`;
+      await salir(cookies);
+
+      const res = await salir(cookies);
+
+      assert.equal(res.status, 204);
+      assertCookiesBorradas(res);
+    });
+
+    it("responde 204 y borra las cookies sin access token, o con uno inválido o que no es texto", async () => {
+      const { refreshToken } = await iniciarSesion();
+      const casos = [
+        undefined,
+        `refresh_token=${refreshToken}`,
+        "access_token=desconocido",
+        "access_token=",
+        `access_token=${encodeURIComponent('j:{"a":1}')}`,
+      ];
+
+      for (const cookie of casos) {
+        const res = await salir(cookie);
+
+        assert.equal(res.status, 204, cookie);
+        assertCookiesBorradas(res);
+      }
+    });
+
+    it("responde 204, borra las cookies y registra el error si el proveedor falla", async (t) => {
+      const outage = new Error("Supabase Auth: boom");
+      const logs = t.mock.method(console, "error", () => {});
+      t.mock.method(dependencias.auth, "logOut", async () => {
+        throw outage;
+      });
+
+      const res = await salir(
+        "access_token=cualquiera; refresh_token=cualquiera",
+      );
+
+      assert.equal(res.status, 204);
+      assertCookiesBorradas(res);
+      assert.equal(logs.mock.callCount(), 1);
+      assert.equal(logs.mock.calls[0]?.arguments[0], outage);
     });
   });
 

@@ -2,6 +2,7 @@
 // y las conecta con los puertos que piden los casos de uso.
 import type { Authenticate } from "../application/ports/in/authenticate.js";
 import type { LogIn } from "../application/ports/in/log-in.js";
+import type { LogOut } from "../application/ports/in/log-out.js";
 import type { RefreshUserSession } from "../application/ports/in/refresh-user-session.js";
 import type { RegisterCompany } from "../application/ports/in/register-company.js";
 import type { UploadProject } from "../application/ports/in/upload-project.js";
@@ -12,6 +13,7 @@ import type { ProjectRepository } from "../application/ports/out/project-reposit
 import type { UserRepository } from "../application/ports/out/user-repository.js";
 import { AuthenticateUseCase } from "../application/use-cases/authenticate.js";
 import { LogInUseCase } from "../application/use-cases/log-in.js";
+import { LogOutUseCase } from "../application/use-cases/log-out.js";
 import { RefreshUserSessionUseCase } from "../application/use-cases/refresh-user-session.js";
 import { RegisterCompanyUseCase } from "../application/use-cases/register-company.js";
 import { UploadProjectUseCase } from "../application/use-cases/upload-project.js";
@@ -53,6 +55,7 @@ export interface CasosDeUso {
   registerCompany: RegisterCompany;
   logIn: LogIn;
   refreshUserSession: RefreshUserSession;
+  logOut: LogOut;
   authenticate: Authenticate;
   uploadProject: UploadProject;
   listProjects: ListProjects;
@@ -105,6 +108,7 @@ export function crearCasosDeUso({
     registerCompany: new RegisterCompanyUseCase(auth, companies, ids),
     logIn: new LogInUseCase(auth),
     refreshUserSession: new RefreshUserSessionUseCase(auth),
+    logOut: new LogOutUseCase(auth),
     authenticate: new AuthenticateUseCase(auth),
     uploadProject: new UploadProjectUseCase(companies, projects, ids),
     listProjects: new ListProjectsUseCase(companies, projects),

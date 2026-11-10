@@ -1,5 +1,6 @@
 import { Router, type CookieOptions, type Response } from "express";
 import type { LogIn, Session } from "../../../application/ports/in/log-in.js";
+import type { LogOut } from "../../../application/ports/in/log-out.js";
 import type { RefreshUserSession } from "../../../application/ports/in/refresh-user-session.js";
 import { NoAutenticadoError } from "../../../domain/errors.js";
 import type { OpcionesDeCookie } from "../../../infrastructure/config/env.js";
@@ -20,6 +21,7 @@ const REFRESH_TOKEN_PATH = `${API_PREFIX}/auth`;
 export function authRoutes(
   logIn: LogIn,
   refreshUserSession: RefreshUserSession,
+  logOut: LogOut,
   cookies: OpcionesDeCookie,
 ): Router {
   const router = Router();
@@ -73,6 +75,23 @@ export function authRoutes(
       if (error instanceof NoAutenticadoError) borrarSesion(res);
       throw error;
     }
+  });
+
+  // Needs no valid session either: it always answers 204 and clears the cookies, so logging out
+  // twice, or with an expired session, is not an error.
+  router.post("/logout", async (req, res) => {
+    const token: unknown = req.cookies.access_token;
+    if (typeof token === "string" && token !== "") {
+      try {
+        await logOut.execute(token);
+      } catch (error) {
+        // An outage must not keep the user logged in on this browser.
+        console.error(error);
+      }
+    }
+
+    borrarSesion(res);
+    res.status(204).end();
   });
 
   return router;
