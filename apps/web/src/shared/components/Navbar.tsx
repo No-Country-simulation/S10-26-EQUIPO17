@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { track, type AnalyticsEvent } from "../analytics/analytics";
+import { useAuth } from "../../features/auth/useAuth";
 
 const links: { label: string; href: string; event: AnalyticsEvent; strong?: boolean }[] = [
   { label: "Para centros de estudio", href: "#instituciones", event: "clicked_nav_institutions", strong: true },
@@ -10,6 +11,7 @@ const links: { label: string; href: string; event: AnalyticsEvent; strong?: bool
 ];
 
 export function Navbar() {
+  const { user } = useAuth();
   return (
     <header className="navbar fixed inset-x-0 top-0 z-50 h-20 border-b border-neutral bg-base-200/90 px-6 backdrop-blur-xl lg:px-8">
       <div className="mx-auto flex w-full max-w-360 items-center justify-between">
@@ -47,15 +49,17 @@ export function Navbar() {
           >
             Iniciar sesión
           </Link>
-          <Link
-            to="/subir-proyecto"
-            onClick={() =>
-              track("clicked_upload_project", { location: "navbar" })
-            }
-            className="btn btn-sm bg-brand-gradient border-0 text-white shadow-[0_0_20px_rgba(255,0,148,0.35)]"
-          >
-            Subir Proyecto
-          </Link>
+          {!user && (
+            <Link
+              to="/subir-proyecto"
+              onClick={() =>
+                track("clicked_upload_project", { location: "navbar" })
+              }
+              className="btn btn-sm bg-brand-gradient border-0 text-white shadow-[0_0_20px_rgba(255,0,148,0.35)]"
+            >
+              Subir Proyecto
+            </Link>
+          )}
         </div>
       </div>
     </header>
