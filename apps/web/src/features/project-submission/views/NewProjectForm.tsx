@@ -1,12 +1,16 @@
+import { useNavigate } from "react-router-dom";
 import { projectFlow } from "../challengeFlows";
 import { ChallengeWizard } from "../components/ChallengeWizard";
 import type { ChallengeFormValues } from "../challengeFormSchema";
 import { createProject } from "../submissionService";
 
-// Requiere la sesión que deja el registro/login (cookie access_token).
+// Requiere sesión de empresa (la guardia RequireAuth lo garantiza en las rutas).
 export function NewProjectForm() {
+  const navigate = useNavigate();
+
   const handleSubmit = async (values: ChallengeFormValues) => {
-    await createProject(values);
+    const project = await createProject(values);
+    navigate("/dashboard", { state: { project } });
   };
 
   return (
@@ -20,7 +24,6 @@ export function NewProjectForm() {
       subtitle="Tu cuenta está lista. Cuéntanos qué quieres resolver."
       submitLabel="Publicar proyecto"
       submitIcon="rocket_launch"
-      successMessage="¡Proyecto publicado! Los equipos ya pueden verlo."
       onSubmit={handleSubmit}
     />
   );

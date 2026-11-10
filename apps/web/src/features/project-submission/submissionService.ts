@@ -1,6 +1,16 @@
 import { apiClient } from "../../shared/api/apiClient";
 import type { ChallengeFormValues } from "./challengeFormSchema";
 
+export interface Project {
+  id: string;
+  companyId: string;
+  title: string;
+  description: string;
+  vertical: string;
+  businessSectors: string[];
+  projectStage: string;
+}
+
 export function registerCompany(values: ChallengeFormValues) {
   return apiClient<unknown>("/companies/register", {
     method: "POST",
@@ -18,16 +28,8 @@ export function registerCompany(values: ChallengeFormValues) {
   });
 }
 
-// El login deja las cookies de sesión (HttpOnly) que exige POST /projects.
-export function logIn(email: string, password: string) {
-  return apiClient<{ role: string | null }>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-}
-
 export function createProject(values: ChallengeFormValues) {
-  return apiClient<unknown>("/projects", {
+  return apiClient<Project>("/projects", {
     method: "POST",
     body: JSON.stringify({
       title: values.title,

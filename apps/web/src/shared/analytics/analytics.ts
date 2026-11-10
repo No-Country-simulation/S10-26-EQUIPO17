@@ -20,7 +20,9 @@ export type AnalyticsEvent =
   | "completed_wizard_step"
   | "submitted_wizard"
   | "wizard_submit_failed"
-  | "registered_company";
+  | "registered_company"
+  | "logged_in"
+  | "login_failed";
 
 const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
 const host = (import.meta.env.VITE_POSTHOG_HOST as string | undefined) || "https://us.i.posthog.com";

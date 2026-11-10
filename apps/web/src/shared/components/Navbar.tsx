@@ -41,7 +41,7 @@ export function Navbar() {
 
         <div className="flex items-center gap-3">
           <Link
-            to="/cargar-desafio"
+            to="/iniciar-sesion"
             onClick={() => track("clicked_login", { location: "navbar" })}
             className="btn btn-sm hidden border-neutral bg-base-300 sm:inline-flex"
           >

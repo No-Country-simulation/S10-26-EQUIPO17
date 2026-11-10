@@ -1,17 +1,20 @@
 import { useNavigate } from "react-router-dom";
 import { track } from "../../../shared/analytics/analytics";
+import { useAuth } from "../../auth/useAuth";
 import { registerFlow } from "../challengeFlows";
 import { ChallengeWizard } from "../components/ChallengeWizard";
 import type { ChallengeFormValues } from "../challengeFormSchema";
-import { logIn, registerCompany } from "../submissionService";
+import { registerCompany } from "../submissionService";
 
 export function RegisterCompanyForm() {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
 
   const handleSubmit = async (values: ChallengeFormValues) => {
     await registerCompany(values);
     track("registered_company");
-    await logIn(values.email, values.password);
+    // El registro no abre sesión: el login deja las cookies que exige POST /projects.
+    await signIn(values.email, values.password);
     navigate("/proyecto/nuevo");
   };
 

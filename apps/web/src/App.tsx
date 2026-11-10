@@ -1,5 +1,9 @@
 // apps/web/src/App.tsx
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { AuthProvider } from "./features/auth/AuthProvider";
+import { RequireAuth } from "./features/auth/RequireAuth";
+import { LoginPage } from "./features/auth/views/LoginPage";
+import { CompanyDashboard } from "./features/dashboard-company/views/CompanyDashboard";
 import { PublicDashboard } from "./features/dashboard-public/views/PublicDashboard";
 import { NewChallengeForm } from "./features/project-submission/views/NewChallengeForm";
 import { NewProjectForm } from "./features/project-submission/views/NewProjectForm";
@@ -18,15 +22,31 @@ const router = createBrowserRouter([
   },
   {
     path: "/cargar-desafio",
-    element: <NewChallengeForm />, // Pieza 2: Formulario inicial
+    element: <NewChallengeForm />, // Pieza 2: Formulario inicial (invitado)
   },
   {
     path: "/crear-cuenta",
     element: <RegisterCompanyForm />,
   },
   {
+    path: "/iniciar-sesion",
+    element: <LoginPage />,
+  },
+  {
     path: "/proyecto/nuevo",
-    element: <NewProjectForm />,
+    element: (
+      <RequireAuth>
+        <NewProjectForm />
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/dashboard",
+    element: (
+      <RequireAuth>
+        <CompanyDashboard />
+      </RequireAuth>
+    ),
   },
   {
     path: "/tracking/:id",
@@ -35,5 +55,9 @@ const router = createBrowserRouter([
 ]);
 
 export function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }
