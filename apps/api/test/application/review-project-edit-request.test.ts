@@ -20,7 +20,7 @@ import { ProjectStage } from "../../src/domain/value-objects/project-stage.js";
 import { Vertical } from "../../src/domain/value-objects/vertical.js";
 
 describe("ReviewProjectEditRequest", () => {
-  const reviewer = { userId: "reviewer-1", role: "admin" } as const;
+  const reviewer = { userId: "reviewer-1", email: "reviewer-1@ejemplo.com", role: "admin" } as const;
 
   let projects: InMemoryProjectRepository;
   let editRequests: InMemoryProjectEditRequestRepository;
@@ -106,7 +106,7 @@ describe("ReviewProjectEditRequest", () => {
   });
   //ensuring company cannot access reject or approve projects, which is exclusive to admin
   it("rejects companies trying to review edit requests", async () => {
-    const company = { userId: "company-user-1", role: "company" } as const;
+    const company = { userId: "company-user-1", email: "company-user-1@ejemplo.com", role: "company" } as const;
 
     await assert.rejects(
       reviewRequest.execute(company, "request-1", {

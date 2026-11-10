@@ -27,8 +27,8 @@ import { ProjectStage } from "../../src/domain/value-objects/project-stage.js";
 import { Vertical } from "../../src/domain/value-objects/vertical.js";
 
 describe("SubmitProjectEditRequest", () => {
-  const owner = { userId: "user-1", role: "company" } as const;
-  const anotherOwner = { userId: "user-2", role: "company" } as const;
+  const owner = { userId: "user-1", email: "user-1@ejemplo.com", role: "company" } as const;
+  const anotherOwner = { userId: "user-2", email: "user-2@ejemplo.com", role: "company" } as const;
 
   let companies: InMemoryCompanyRepository;
   let projects: InMemoryProjectRepository;
@@ -136,7 +136,7 @@ describe("SubmitProjectEditRequest", () => {
 
   it("rejects a user without the company role", async () => {
     await assert.rejects(
-      submitRequest.execute({ userId: owner.userId, role: null }, "project-1", {
+      submitRequest.execute({ userId: owner.userId, email: owner.email, role: null }, "project-1", {
         title: "New title",
       }),
       AccesoDenegadoError,
@@ -146,7 +146,7 @@ describe("SubmitProjectEditRequest", () => {
   it("rejects a user without an associated company", async () => {
     await assert.rejects(
       submitRequest.execute(
-        { userId: "unknown-user", role: "company" },
+        { userId: "unknown-user", email: "unknown-user@ejemplo.com", role: "company" },
         "project-1",
         { title: "New title" },
       ),

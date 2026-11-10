@@ -31,6 +31,7 @@ describe("RefreshUserSession", () => {
     assert.ok(session.expiresIn > 0);
     assert.deepEqual(await auth.verifyAccessToken(session.accessToken), {
       userId: id,
+      email: "ana@ejemplo.com",
       role: "company",
     });
   });
