@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://ec2-host-pendiente.invalid/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://apinocountry17.duckdns.org/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

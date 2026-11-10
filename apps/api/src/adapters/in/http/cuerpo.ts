@@ -21,8 +21,57 @@ export function leerTexto(cuerpo: Cuerpo, campo: string): string {
 
 export function leerTextos(cuerpo: Cuerpo, campo: string): string[] {
   const valor = cuerpo[campo];
-  if (!Array.isArray(valor) || !valor.every((item) => typeof item === "string")) {
-    throw new ValidacionError(`El campo "${campo}" debe ser una lista de textos`);
+  if (
+    !Array.isArray(valor) ||
+    !valor.every((item) => typeof item === "string")
+  ) {
+    throw new ValidacionError(
+      `El campo "${campo}" debe ser una lista de textos`,
+    );
   }
+  return valor;
+}
+
+// importante para verificar que los campos del texto opcional sean validos
+export function leerTextoOpcional(
+  cuerpo: Cuerpo,
+  campo: string,
+): string | undefined {
+  const valor = cuerpo[campo];
+
+  if (valor === undefined) return undefined;
+
+  if (typeof valor !== "string") {
+    throw new ValidacionError(`El campo "${campo}" debe ser un texto`);
+  }
+
+  return valor;
+}
+
+export function leerTextosOpcional(
+  cuerpo: Cuerpo,
+  campo: string,
+): string[] | undefined {
+  const valor = cuerpo[campo];
+
+  if (valor === undefined) return undefined;
+
+  if (
+    !Array.isArray(valor) ||
+    !valor.every((item) => typeof item === "string")
+  ) {
+    throw new ValidacionError(
+      `El campo "${campo}" debe ser una lista de textos`,
+    );
+  }
+
+  return valor;
+}
+//verifica que el parametro no este vacio
+export function leerParametroRuta(valor: unknown, nombre: string): string {
+  if (typeof valor !== "string" || valor.trim() === "") {
+    throw new ValidacionError(`El parámetro "${nombre}" debe ser un texto`);
+  }
+
   return valor;
 }

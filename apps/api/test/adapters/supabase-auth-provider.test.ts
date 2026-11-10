@@ -110,7 +110,7 @@ describe("SupabaseAuthProvider.logIn", () => {
   });
 
   it("returns a null role when app_metadata has none or an unknown one", async () => {
-    for (const role of [undefined, "admin"]) {
+    for (const role of [undefined, "unknown-role"]) {
       const auth = providerWith(admin, fakeSessionClients(signedIn(role)).create);
       assert.equal((await auth.logIn(email, "clave-segura")).role, null);
     }
@@ -213,7 +213,7 @@ describe("SupabaseAuthProvider.refreshSession", () => {
   });
 
   it("returns a null role when app_metadata has none or an unknown one", async () => {
-    for (const role of [undefined, "admin"]) {
+    for (const role of [undefined, "unknown-role"]) {
       const auth = providerWith(admin, refreshClients(refreshed(role)).create);
       assert.equal((await auth.refreshSession("refresh")).role, null);
     }
@@ -313,7 +313,7 @@ describe("SupabaseAuthProvider.verifyAccessToken", () => {
   });
 
   it("returns a null role when app_metadata has none or an unknown one", async () => {
-    for (const app_metadata of [{}, { role: "admin" }]) {
+    for (const app_metadata of [{}, { role: "unknown-role" }]) {
       const auth = providerWith(
         adminWith({ data: { user: { id: "auth-id", app_metadata } }, error: null }),
       );

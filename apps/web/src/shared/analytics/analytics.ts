@@ -13,7 +13,16 @@ export type AnalyticsEvent =
   | "clicked_nav_how_it_works"
   | "clicked_nav_public_metrics"
   | "clicked_share_project"
-  | "clicked_institution";
+  | "clicked_institution"
+  | "clicked_upload_as_guest"
+  | "clicked_create_account"
+  | "viewed_wizard"
+  | "completed_wizard_step"
+  | "submitted_wizard"
+  | "wizard_submit_failed"
+  | "registered_company"
+  | "logged_in"
+  | "login_failed";
 
 const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
 const host = (import.meta.env.VITE_POSTHOG_HOST as string | undefined) || "https://us.i.posthog.com";

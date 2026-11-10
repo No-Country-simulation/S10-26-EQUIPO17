@@ -3,12 +3,19 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { BusinessSector } from "../../../../domain/value-objects/business-sector.js";
 import { Company } from "../../../../domain/entities/company.js";
-import type { Project } from "../../../../domain/entities/project.js";
+//import type { Project } from "../../../../domain/entities/project.js";
 import { Country } from "../../../../domain/value-objects/country.js";
 import { OrganizationType } from "../../../../domain/value-objects/organization-type.js";
 import { User } from "../../../../domain/entities/user.js";
 import { ConflictoError } from "../../../../domain/errors.js";
 import { Email } from "../../../../domain/value-objects/email.js";
+import { Project } from "../../../../domain/entities/project.js";
+import { ProjectStage } from "../../../../domain/value-objects/project-stage.js";
+import { Vertical } from "../../../../domain/value-objects/vertical.js";
+import {
+  ProjectEditRequest,
+  type ProjectEditRequestStatus,
+} from "../../../../domain/entities/project-edit-request.js";
 
 export interface UserRow {
   id: string;
@@ -84,7 +91,18 @@ export const projectToRow = (project: Project): ProjectRow => ({
   business_sectors: project.businessSectors.map((sector) => sector.getSector()),
   project_stage: project.projectStage.getStage(),
 });
-
+export const rowToProject = (row: ProjectRow): Project =>
+  Project.create({
+    id: row.id,
+    companyId: row.company_id,
+    title: row.title,
+    description: row.description,
+    vertical: new Vertical(row.vertical),
+    businessSectors: row.business_sectors.map(
+      (sector) => new BusinessSector(sector),
+    ),
+    projectStage: new ProjectStage(row.project_stage),
+  });
 // Códigos de error de Postgres que el adaptador traduce.
 const VIOLACION_UNICA = "23505";
 export const TEXTO_NO_ES_UUID = "22P02";
@@ -95,3 +113,69 @@ export function traducirError(error: PostgrestError): Error {
   }
   return new Error(`Supabase: ${error.message}`, { cause: error });
 }
+export interface ProjectEditRequestRow {
+  id: string;
+  project_id: string;
+  company_id: string;
+  requested_by_user_id: string | null;
+
+  proposed_title: string;
+  proposed_description: string;
+  proposed_vertical: string;
+  proposed_business_sectors: string[];
+  proposed_project_stage: string;
+
+  status: ProjectEditRequestStatus;
+  created_at: string;
+
+  reviewed_by_user_id: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+}
+export const projectEditRequestToRow = (
+  request: ProjectEditRequest,
+): ProjectEditRequestRow => ({
+  id: request.id,
+  project_id: request.proposedProject.id,
+  company_id: request.proposedProject.companyId,
+  requested_by_user_id: request.requestedByUserId,
+
+  proposed_title: request.proposedProject.title,
+  proposed_description: request.proposedProject.description,
+  proposed_vertical: request.proposedProject.vertical.getVertical(),
+  proposed_business_sectors: request.proposedProject.businessSectors.map(
+    (sector) => sector.getSector(),
+  ),
+  proposed_project_stage: request.proposedProject.projectStage.getStage(),
+
+  status: request.status,
+  created_at: request.createdAt.toISOString(),
+
+  reviewed_by_user_id: request.reviewedByUserId,
+  reviewed_at: request.reviewedAt?.toISOString() ?? null,
+  rejection_reason: request.rejectionReason,
+});
+
+export const rowToProjectEditRequest = (
+  row: ProjectEditRequestRow,
+): ProjectEditRequest =>
+  ProjectEditRequest.create({
+    id: row.id,
+
+    proposedProject: rowToProject({
+      id: row.project_id,
+      company_id: row.company_id,
+      title: row.proposed_title,
+      description: row.proposed_description,
+      vertical: row.proposed_vertical,
+      business_sectors: row.proposed_business_sectors,
+      project_stage: row.proposed_project_stage,
+    }),
+
+    requestedByUserId: row.requested_by_user_id,
+    status: row.status,
+    createdAt: new Date(row.created_at),
+    reviewedByUserId: row.reviewed_by_user_id,
+    reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : null,
+    rejectionReason: row.rejection_reason,
+  });
