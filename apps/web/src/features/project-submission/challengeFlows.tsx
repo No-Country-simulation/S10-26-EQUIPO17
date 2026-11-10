@@ -18,7 +18,7 @@ export interface WizardStepConfig {
 }
 
 export interface WizardFlow {
-  id: "guest" | "register" | "project";
+  id: "register" | "project";
   steps: WizardStepConfig[];
   // Valida solo los campos que pertenecen a los pasos del flujo.
   schema: typeof challengeSchema;
@@ -58,9 +58,6 @@ const projectStep: WizardStepConfig = {
   sections: ["project"],
   Component: ProjectStep,
 };
-
-// Invitado: sin cuenta ni contraseña, los datos no se envían a la API.
-export const guestFlow = createFlow("guest", [profileStep, organizationStep, projectStep]);
 
 // Registro de empresa (POST /companies/register); después se sube el proyecto con la sesión iniciada.
 export const registerFlow = createFlow("register", [

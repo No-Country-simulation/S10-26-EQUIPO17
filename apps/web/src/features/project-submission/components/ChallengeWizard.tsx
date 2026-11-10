@@ -24,6 +24,7 @@ interface ChallengeWizardProps {
   submitIcon: string;
   // Si no hay mensaje de éxito no se muestra el toast (p. ej. cuando se redirige a otra ruta).
   successMessage?: string;
+  onSkipProject?: () => void;
   onSubmit: (values: ChallengeFormValues) => Promise<void>;
 }
 
@@ -34,6 +35,7 @@ export function ChallengeWizard({
   submitLabel,
   submitIcon,
   successMessage,
+  onSkipProject,
   onSubmit,
 }: ChallengeWizardProps) {
   const form = useForm<ChallengeFormValues>({
@@ -157,6 +159,16 @@ export function ChallengeWizard({
                     </button>
                   )}
                 </div>
+                {onSkipProject && (
+                  <button
+                    type="button"
+                    onClick={onSkipProject}
+                    disabled={isSubmitting}
+                    className="btn btn-ghost w-full text-neutral-content"
+                  >
+                    Subir proyecto en otro momento
+                  </button>
+                )}
               </form>
             </FormProvider>
 

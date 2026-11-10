@@ -26,7 +26,7 @@ export function RegisterCompanyForm() {
           Crea tu cuenta y <span className="text-gradient">comienza</span>
         </>
       }
-      subtitle="Registra tu empresa en dos pasos; al terminar subirás tu primer proyecto."
+      subtitle="Registra tu empresa en dos pasos; luego podrás subir tu primer proyecto."
       submitLabel="Crear cuenta y continuar"
       submitIcon="arrow_forward"
       onSubmit={handleSubmit}
