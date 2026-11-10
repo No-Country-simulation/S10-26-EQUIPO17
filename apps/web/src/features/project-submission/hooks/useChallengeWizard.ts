@@ -1,10 +1,14 @@
 import { useState } from "react";
 import type { UseFormTrigger } from "react-hook-form";
-import { stepFields, type ChallengeFormValues } from "../challengeFormSchema";
+import type { ChallengeFormValues } from "../challengeFormSchema";
+import type { WizardStepConfig } from "../challengeFlows";
 
-const LAST_STEP = stepFields.length - 1;
-
-export function useChallengeWizard(trigger: UseFormTrigger<ChallengeFormValues>) {
+export function useChallengeWizard(
+  trigger: UseFormTrigger<ChallengeFormValues>,
+  steps: WizardStepConfig[],
+  onStepComplete?: (stepIndex: number) => void,
+) {
+  const lastStep = steps.length - 1;
   const [stepIndex, setStepIndex] = useState(0);
   const [furthestStep, setFurthestStep] = useState(0);
 
@@ -14,8 +18,10 @@ export function useChallengeWizard(trigger: UseFormTrigger<ChallengeFormValues>)
   };
 
   const next = async () => {
-    const isValid = await trigger(stepFields[stepIndex]);
-    if (isValid && stepIndex < LAST_STEP) goTo(stepIndex + 1);
+    const isValid = await trigger(steps[stepIndex].fields);
+    if (!isValid || stepIndex >= lastStep) return;
+    onStepComplete?.(stepIndex);
+    goTo(stepIndex + 1);
   };
 
   const back = () => {
@@ -31,7 +37,7 @@ export function useChallengeWizard(trigger: UseFormTrigger<ChallengeFormValues>)
     stepIndex,
     furthestStep,
     isFirstStep: stepIndex === 0,
-    isLastStep: stepIndex === LAST_STEP,
+    isLastStep: stepIndex === lastStep,
     next,
     back,
     restart,

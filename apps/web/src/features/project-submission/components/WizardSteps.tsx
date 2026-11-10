@@ -1,13 +1,13 @@
-import { wizardSteps } from "../challengeFormOptions";
+import type { WizardStepConfig } from "../challengeFlows";
 
-export function WizardSteps({ currentStep }: { currentStep: number }) {
+export function WizardSteps({ steps, currentStep }: { steps: WizardStepConfig[]; currentStep: number }) {
   return (
     <div className="rounded-box border border-neutral bg-base-200 p-4 shadow-xl">
       <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-neutral-content">
-        Paso {currentStep + 1} de {wizardSteps.length}
+        Paso {currentStep + 1} de {steps.length}
       </p>
       <ul className="steps w-full">
-        {wizardSteps.map((step, index) => (
+        {steps.map((step, index) => (
           <li
             key={step.title}
             data-content={index < currentStep ? "✓" : index + 1}

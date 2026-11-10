@@ -1,11 +1,19 @@
-import type { ReactNode } from "react";
-import { orgTypeOptions, stageOptions } from "../challengeFormOptions";
+﻿import type { ReactNode } from "react";
+import {
+  countryOptions,
+  labelOf,
+  orgTypeOptions,
+  sectorOptions,
+  stageOptions,
+  verticalOptions,
+} from "../challengeFormOptions";
 import type { ChallengeFormValues } from "../challengeFormSchema";
+import type { PreviewSection } from "../challengeFlows";
 
 interface ImpactPreviewProps {
   values: ChallengeFormValues;
-  // Último paso alcanzado: las secciones aparecen a medida que el usuario avanza.
-  furthestStep: number;
+  // Secciones de los pasos ya alcanzados: aparecen a medida que el usuario avanza.
+  visibleSections: PreviewSection[];
 }
 
 const benefits = [
@@ -14,7 +22,7 @@ const benefits = [
   { icon: "devices", title: "Colaboración remota", text: "Sprints semanales con seguimiento observable." },
 ];
 
-function PreviewSection({ label, children }: { label: string; children: ReactNode }) {
+function PreviewBlock({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-content">{label}</p>
@@ -33,11 +41,11 @@ function TagList({ items, tone }: { items: string[]; tone: string }) {
   );
 }
 
-export function ImpactPreview({ values, furthestStep }: ImpactPreviewProps) {
-  const orgType = orgTypeOptions.find((o) => o.value === values.orgType)?.label;
-  const stage = stageOptions.find((o) => o.value === values.stage)?.label;
-  const hasProfile = Boolean(values.fullName || values.company || values.jobRole);
-  const hasProject = Boolean(values.title || values.description || values.verticals.length);
+export function ImpactPreview({ values, visibleSections }: ImpactPreviewProps) {
+  const has = (section: PreviewSection) => visibleSections.includes(section);
+  const fullName = [values.firstName, values.lastName].filter(Boolean).join(" ");
+  const hasProfile = Boolean(fullName || values.jobPosition);
+  const hasProject = Boolean(values.title || values.description || values.vertical);
 
   return (
     <aside className="space-y-4 rounded-box border border-neutral bg-base-200 p-6 shadow-2xl lg:sticky lg:top-24">
@@ -50,45 +58,48 @@ export function ImpactPreview({ values, furthestStep }: ImpactPreviewProps) {
       </div>
 
       <div className="space-y-4 rounded-box border border-neutral bg-base-300 p-4">
-        {!hasProfile && furthestStep === 0 && (
+        {!hasProfile && !has("organization") && !has("project") && (
           <p className="text-sm text-neutral-content">
-            Completa tu perfil y aquí verás cómo se presentará tu desafío.
+            Completa el formulario y aquí verás cómo se presentará tu desafío.
           </p>
         )}
 
-        {hasProfile && (
-          <PreviewSection label="Representante">
-            <p className="font-semibold text-white">{values.company || "Empresa sin definir"}</p>
-            <p className="text-sm text-neutral-content">
-              {[values.fullName, values.jobRole].filter(Boolean).join(" · ")}
-            </p>
-          </PreviewSection>
+        {has("profile") && hasProfile && (
+          <PreviewBlock label="Representante">
+            <p className="font-semibold text-white">{fullName || "Sin nombre"}</p>
+            {values.jobPosition && <p className="text-sm text-neutral-content">{values.jobPosition}</p>}
+          </PreviewBlock>
         )}
 
-        {furthestStep >= 1 && (
-          <PreviewSection label="Organización y entorno">
+        {has("organization") && (
+          <PreviewBlock label="Organización y entorno">
+            <p className="font-semibold text-white">{values.companyName || "Empresa sin definir"}</p>
             <p className="text-sm text-white">
-              {orgType} · {values.country}
+              {labelOf(orgTypeOptions, values.organizationType)} · {labelOf(countryOptions, values.country)}
             </p>
-            {values.sectors.length > 0 && <TagList items={values.sectors} tone="badge-accent" />}
-          </PreviewSection>
+            <TagList items={[labelOf(sectorOptions, values.businessSector)]} tone="badge-accent" />
+          </PreviewBlock>
         )}
 
-        {furthestStep >= 2 && hasProject && (
-          <PreviewSection label="Proyecto">
+        {has("project") && hasProject && (
+          <PreviewBlock label="Proyecto">
             {values.title && <p className="line-clamp-2 font-semibold leading-tight text-white">{values.title}</p>}
             {values.description && (
               <p className="line-clamp-3 text-xs text-neutral-content">{values.description}</p>
             )}
-            <span className="badge badge-soft badge-primary badge-sm font-bold">Etapa: {stage}</span>
-            {values.verticals.length > 0 && <TagList items={values.verticals} tone="badge-secondary" />}
-          </PreviewSection>
-        )}
-
-        {furthestStep >= 3 && values.email && (
-          <PreviewSection label="Contacto">
-            <p className="truncate text-sm text-white">{values.email}</p>
-          </PreviewSection>
+            <span className="badge badge-soft badge-primary badge-sm font-bold">
+              Etapa: {labelOf(stageOptions, values.projectStage)}
+            </span>
+            {values.vertical && (
+              <TagList items={[labelOf(verticalOptions, values.vertical)]} tone="badge-secondary" />
+            )}
+            {values.businessSectors.length > 0 && (
+              <TagList
+                items={values.businessSectors.map((sector) => labelOf(sectorOptions, sector))}
+                tone="badge-accent"
+              />
+            )}
+          </PreviewBlock>
         )}
       </div>
 

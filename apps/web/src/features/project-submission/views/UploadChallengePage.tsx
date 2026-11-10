@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { track } from "../../../shared/analytics/analytics";
 import { PublicLayout } from "../../../shared/layouts/PublicLayout";
 import {
   Badge,
@@ -85,6 +86,7 @@ export function UploadChallengePage() {
                 </span>
                 <Link
                   to="/cargar-desafio"
+                  onClick={() => track("clicked_upload_as_guest")}
                   className="btn w-full border-0 bg-brand-gradient text-white shadow-md transition-all hover:brightness-110 sm:w-auto"
                 >
                   Subir como invitado
@@ -116,19 +118,15 @@ export function UploadChallengePage() {
                 </div>
 
                 <div className="mt-8 border-t border-neutral pt-4">
-                  <button
-                    type="button"
-                    disabled
-                    title="La creación de cuentas aún no está disponible"
-                    className="btn w-full cursor-not-allowed border-0 bg-gradient-to-r from-accent to-secondary text-sm text-white opacity-60"
+                  <Link
+                    to="/crear-cuenta"
+                    onClick={() => track("clicked_create_account")}
+                    className="btn w-full border-0 bg-gradient-to-r from-accent to-secondary text-sm text-white transition-all hover:brightness-110"
                   >
                     Crear cuenta y comenzar
-                  </button>
+                  </Link>
                   <p className="mt-3 text-center text-[11px] text-neutral-content">
                     Ideal para conocer la plataforma antes de comprometerte.
-                  </p>
-                  <p className="mt-2 text-center text-[11px] text-neutral-content">
-                    Próximamente podrás crear una cuenta.
                   </p>
                 </div>
               </div>

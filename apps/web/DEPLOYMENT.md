@@ -1,4 +1,4 @@
-# 🚀 Guía de Despliegue del Frontend - S10-26-EQUIPO17
+﻿# 🚀 Guía de Despliegue del Frontend - S10-26-EQUIPO17
 
 Este documento detalla la arquitectura, configuración y automatización utilizadas para el despliegue del frontend (**React + Vite**) alojado en este monorepo administrado con **pnpm workspaces**.
 
@@ -30,13 +30,13 @@ El cliente HTTP (`src/shared/api/apiClient.ts`) llama por defecto a `/api` en el
 ```json
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://ec2-host-pendiente.invalid/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://apinocountry17.duckdns.org/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
 ```
 
-1. **Proxy de la API:** Vercel reenvía `/api/*` a la API en la EC2. El navegador ve la API en el mismo origen que la web, así que las cookies de sesión son de primera parte: `SameSite=Lax` frena el CSRF, Safari y Firefox no las bloquean y la API no necesita CORS. ⚠️ Hay que reemplazar `ec2-host-pendiente.invalid` por el host HTTPS real de la EC2. En desarrollo, el `server.proxy` de `vite.config.ts` hace lo mismo contra `http://127.0.0.1:3000`.
+1. **Proxy de la API:** Vercel reenvía `/api/*` a la API en la EC2. El navegador ve la API en el mismo origen que la web, así que las cookies de sesión son de primera parte: `SameSite=Lax` frena el CSRF, Safari y Firefox no las bloquean y la API no necesita CORS. En desarrollo, el `server.proxy` de `vite.config.ts` hace lo mismo contra `https://apinocountry17.duckdns.org`; con `VITE_API_PROXY_TARGET=http://127.0.0.1:3000` se apunta a una API local.
 2. **Catch-all de la SPA:** para solucionar el comportamiento nativo de los servidores en la nube que arrojan errores `404 NOT FOUND` al recargar páginas manualmente o acceder de forma directa a rutas profundas (por ejemplo, `/cargar-desafio`), todo lo demás se redirige al archivo central `index.html` para que **React Router** tome el control de la navegación en el cliente.
 
 ---

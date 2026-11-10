@@ -12,8 +12,12 @@ export default defineConfig({
     // The browser calls /api on Vite's own origin and Vite forwards it to the API, mirroring the
     // Vercel rewrite in production. Same origin means the session cookies are first-party and the
     // API needs no CORS. See apps/api/README.md#proxy-la-web-y-la-api-en-el-mismo-origen.
+    // VITE_API_PROXY_TARGET permite volver a una API local (http://127.0.0.1:3000) sin tocar el código.
     proxy: {
-      "/api": "http://127.0.0.1:3000",
+      "/api": {
+        target: process.env.VITE_API_PROXY_TARGET ?? "https://apinocountry17.duckdns.org",
+        changeOrigin: true,
+      },
     },
   },
 });

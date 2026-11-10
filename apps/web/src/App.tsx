@@ -2,6 +2,8 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { PublicDashboard } from "./features/dashboard-public/views/PublicDashboard";
 import { NewChallengeForm } from "./features/project-submission/views/NewChallengeForm";
+import { NewProjectForm } from "./features/project-submission/views/NewProjectForm";
+import { RegisterCompanyForm } from "./features/project-submission/views/RegisterCompanyForm";
 import { UploadChallengePage } from "./features/project-submission/views/UploadChallengePage";
 import { ProjectTracking } from "./features/tracking-project/views/ProjectTracking";
 
@@ -17,6 +19,14 @@ const router = createBrowserRouter([
   {
     path: "/cargar-desafio",
     element: <NewChallengeForm />, // Pieza 2: Formulario inicial
+  },
+  {
+    path: "/crear-cuenta",
+    element: <RegisterCompanyForm />,
+  },
+  {
+    path: "/proyecto/nuevo",
+    element: <NewProjectForm />,
   },
   {
     path: "/tracking/:id",
