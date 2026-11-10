@@ -12,4 +12,8 @@ export class InMemoryCompanyRepository implements CompanyRepository {
   async findById(id: string): Promise<Company | null> {
     return this.companies.get(id) ?? null;
   }
+
+  async findByUserId(userId: string): Promise<Company | null> {
+    return [...this.companies.values()].find((company) => company.user?.id === userId) ?? null;
+  }
 }

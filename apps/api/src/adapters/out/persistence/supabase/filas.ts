@@ -3,6 +3,7 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { BusinessSector } from "../../../../domain/value-objects/business-sector.js";
 import { Company } from "../../../../domain/entities/company.js";
+import type { Project } from "../../../../domain/entities/project.js";
 import { Country } from "../../../../domain/value-objects/country.js";
 import { OrganizationType } from "../../../../domain/value-objects/organization-type.js";
 import { User } from "../../../../domain/entities/user.js";
@@ -29,6 +30,16 @@ export interface CompanyRow {
 export type CompanyWithUserRow = Omit<CompanyRow, "user_id"> & {
   user: UserRow | null;
 };
+
+export interface ProjectRow {
+  id: string;
+  company_id: string;
+  title: string;
+  description: string;
+  vertical: string;
+  business_sectors: string[];
+  project_stage: string;
+}
 
 export const USER_COLUMNS = "id, email";
 export const COMPANY_WITH_USER_COLUMNS = `id, first_name, last_name, job_position, company_name, country, business_sector, organization_type, user:users(${USER_COLUMNS})`;
@@ -63,6 +74,16 @@ export const rowToCompany = (row: CompanyWithUserRow): Company =>
     organizationType: new OrganizationType(row.organization_type),
     user: row.user ? rowToUser(row.user) : null,
   });
+
+export const projectToRow = (project: Project): ProjectRow => ({
+  id: project.id,
+  company_id: project.companyId,
+  title: project.title,
+  description: project.description,
+  vertical: project.vertical.getVertical(),
+  business_sectors: project.businessSectors.map((sector) => sector.getSector()),
+  project_stage: project.projectStage.getStage(),
+});
 
 // Códigos de error de Postgres que el adaptador traduce.
 const VIOLACION_UNICA = "23505";

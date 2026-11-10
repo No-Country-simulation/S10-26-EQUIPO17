@@ -31,4 +31,14 @@ export class SupabaseCompanyRepository implements CompanyRepository {
     if (error) throw traducirError(error);
     return data ? rowToCompany(data) : null;
   }
+
+  async findByUserId(userId: string): Promise<Company | null> {
+    const { data, error } = await this.supabase
+      .from("companies")
+      .select(COMPANY_WITH_USER_COLUMNS)
+      .eq("user_id", userId)
+      .maybeSingle<CompanyWithUserRow>();
+    if (error) throw traducirError(error);
+    return data ? rowToCompany(data) : null;
+  }
 }

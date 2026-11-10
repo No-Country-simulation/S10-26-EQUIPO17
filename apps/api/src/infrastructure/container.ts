@@ -1,19 +1,28 @@
 // Composition root: el único lugar que conoce las implementaciones concretas
 // y las conecta con los puertos que piden los casos de uso.
+import type { Authenticate } from "../application/ports/in/authenticate.js";
 import type { LogIn } from "../application/ports/in/log-in.js";
+import type { RefreshUserSession } from "../application/ports/in/refresh-user-session.js";
 import type { RegisterCompany } from "../application/ports/in/register-company.js";
+import type { UploadProject } from "../application/ports/in/upload-project.js";
 import type { GeneradorDeIds } from "../application/ports/out/generador-de-ids.js";
 import type { AuthProvider } from "../application/ports/out/auth-provider.js";
 import type { CompanyRepository } from "../application/ports/out/company-repository.js";
+import type { ProjectRepository } from "../application/ports/out/project-repository.js";
 import type { UserRepository } from "../application/ports/out/user-repository.js";
+import { AuthenticateUseCase } from "../application/use-cases/authenticate.js";
 import { LogInUseCase } from "../application/use-cases/log-in.js";
+import { RefreshUserSessionUseCase } from "../application/use-cases/refresh-user-session.js";
 import { RegisterCompanyUseCase } from "../application/use-cases/register-company.js";
+import { UploadProjectUseCase } from "../application/use-cases/upload-project.js";
 import { InMemoryAuthProvider } from "../adapters/out/auth/in-memory-auth-provider.js";
 import { SupabaseAuthProvider } from "../adapters/out/auth/supabase-auth-provider.js";
 import { GeneradorDeIdsUuid } from "../adapters/out/ids/generador-de-ids-uuid.js";
 import { InMemoryCompanyRepository } from "../adapters/out/persistence/memory/in-memory-company-repository.js";
+import { InMemoryProjectRepository } from "../adapters/out/persistence/memory/in-memory-project-repository.js";
 import { InMemoryUserRepository } from "../adapters/out/persistence/memory/in-memory-user-repository.js";
 import { SupabaseCompanyRepository } from "../adapters/out/persistence/supabase/supabase-company-repository.js";
+import { SupabaseProjectRepository } from "../adapters/out/persistence/supabase/supabase-project-repository.js";
 import { SupabaseUserRepository } from "../adapters/out/persistence/supabase/supabase-user-repository.js";
 import type { Config } from "./config/env.js";
 import { crearClienteSupabase } from "./supabase/client.js";
@@ -22,6 +31,7 @@ import { crearClienteSupabase } from "./supabase/client.js";
 export interface Dependencias {
   users: UserRepository;
   companies: CompanyRepository;
+  projects: ProjectRepository;
   auth: AuthProvider;
   ids: GeneradorDeIds;
 }
@@ -30,6 +40,9 @@ export interface Dependencias {
 export interface CasosDeUso {
   registerCompany: RegisterCompany;
   logIn: LogIn;
+  refreshUserSession: RefreshUserSession;
+  authenticate: Authenticate;
+  uploadProject: UploadProject;
 }
 
 export function crearDependencias(config: Config): Dependencias {
@@ -42,6 +55,7 @@ export function crearDependencias(config: Config): Dependencias {
       users,
       auth: new InMemoryAuthProvider(users, ids),
       companies: new InMemoryCompanyRepository(),
+      projects: new InMemoryProjectRepository(),
     };
   }
 
@@ -52,12 +66,16 @@ export function crearDependencias(config: Config): Dependencias {
     auth: new SupabaseAuthProvider(supabase, () => crearClienteSupabase(url, claveSecreta)),
     users: new SupabaseUserRepository(supabase),
     companies: new SupabaseCompanyRepository(supabase),
+    projects: new SupabaseProjectRepository(supabase),
   };
 }
 
-export function crearCasosDeUso({ companies, auth, ids }: Dependencias): CasosDeUso {
+export function crearCasosDeUso({ companies, projects, auth, ids }: Dependencias): CasosDeUso {
   return {
     registerCompany: new RegisterCompanyUseCase(auth, companies, ids),
     logIn: new LogInUseCase(auth),
+    refreshUserSession: new RefreshUserSessionUseCase(auth),
+    authenticate: new AuthenticateUseCase(auth),
+    uploadProject: new UploadProjectUseCase(companies, projects, ids),
   };
 }

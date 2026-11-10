@@ -1,8 +1,10 @@
+import cookieParser from "cookie-parser";
 import express, { Router, type Express } from "express";
 import { API_PREFIX } from "../../adapters/in/http/api-prefix.js";
 import { manejadorDeErrores } from "../../adapters/in/http/manejador-de-errores.js";
 import { authRoutes } from "../../adapters/in/http/auth-routes.js";
 import { companyRoutes } from "../../adapters/in/http/company-routes.js";
+import { projectRoutes } from "../../adapters/in/http/project-routes.js";
 import type { Config } from "../config/env.js";
 import type { CasosDeUso } from "../container.js";
 
@@ -13,13 +15,15 @@ export type OpcionesHttp = Pick<Config, "cookies">;
 export function crearApp(casos: CasosDeUso, { cookies }: OpcionesHttp): Express {
   const app = express();
   app.use(express.json());
+  app.use(cookieParser());
 
   const api = Router();
   api.get("/", (_req, res) => {
     res.json({ status: "ok" });
   });
-  api.use("/auth", authRoutes(casos.logIn, cookies));
+  api.use("/auth", authRoutes(casos.logIn, casos.refreshUserSession, cookies));
   api.use("/companies", companyRoutes(casos.registerCompany));
+  api.use("/projects", projectRoutes(casos.uploadProject, casos.authenticate));
   app.use(API_PREFIX, api);
 
   app.use((_req, res) => {

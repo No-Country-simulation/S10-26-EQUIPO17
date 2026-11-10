@@ -95,6 +95,7 @@ describe("RegisterCompany", () => {
         throw failure;
       },
       findById: async () => null,
+      findByUserId: async () => null,
     };
     registerCompany = new RegisterCompanyUseCase(auth, failingCompanies, new GeneradorDeIdsUuid());
 
@@ -114,6 +115,7 @@ describe("RegisterCompany", () => {
         throw saveFailure;
       },
       findById: async () => null,
+      findByUserId: async () => null,
     };
     registerCompany = new RegisterCompanyUseCase(auth, failingCompanies, new GeneradorDeIdsUuid());
 
