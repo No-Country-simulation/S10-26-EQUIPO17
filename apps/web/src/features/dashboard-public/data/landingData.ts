@@ -89,8 +89,8 @@ export const roles: Role[] = [
     ],
     cta: {
       icon: "add_task",
-      label: "Publicar un Desafío (2 min)",
-      href: "/cargar-desafio",
+      label: "Publicar un desafío (2 min)",
+      href: "/subir-proyecto",
       className: "bg-brand-gradient border-0 text-white shadow-lg",
       event: "clicked_publish_challenge",
     },

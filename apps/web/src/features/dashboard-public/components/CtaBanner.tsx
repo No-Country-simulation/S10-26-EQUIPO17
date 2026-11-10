@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { track } from "../../../shared/analytics/analytics";
 
 export function CtaBanner() {
@@ -26,14 +27,14 @@ export function CtaBanner() {
               <span className="material-symbols-outlined text-[22px]">rocket_launch</span>
               Participar como profesional emergente (Gratis)
             </a>
-            <a
-              href="#empresas"
+            <Link
+              to="/subir-proyecto"
               onClick={() => track("clicked_share_project", { location: "cta_banner" })}
               className="btn btn-lg gap-2 border border-secondary/40 bg-secondary/10 text-base font-bold text-secondary shadow-[0_0_24px_rgba(2,190,239,0.16)] transition-all hover:border-secondary hover:bg-secondary/20 active:scale-[0.98]"
             >
               <span className="material-symbols-outlined text-[22px]">business_center</span>
               Comparte tu Proyecto
-            </a>
+            </Link>
             <a
               href="#instituciones"
               onClick={() => track("clicked_institution", { location: "cta_banner" })}
