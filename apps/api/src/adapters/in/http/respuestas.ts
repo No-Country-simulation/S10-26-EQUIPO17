@@ -1,6 +1,7 @@
 import type { Company } from "../../../domain/entities/company.js";
 import type { Project } from "../../../domain/entities/project.js";
 import type { Session } from "../../../application/ports/in/log-in.js";
+import type { AuthenticatedUser } from "../../../application/ports/out/auth-provider.js";
 import type { User } from "../../../domain/entities/user.js";
 import type { UserRole } from "../../../domain/value-objects/user-role.js";
 import type { ProjectEditRequest } from "../../../domain/entities/project-edit-request.js";
@@ -35,6 +36,11 @@ export interface SessionResponse {
 
 export const sessionToResponse = (session: Session): SessionResponse => ({
   user: { ...userToResponse(session.user), role: session.role },
+});
+
+/** Same shape as a session, so the frontend reads the user the same way after any of them. */
+export const authenticatedUserToResponse = (user: AuthenticatedUser): SessionResponse => ({
+  user: { id: user.userId, email: user.email, role: user.role },
 });
 
 export const companyToResponse = (company: Company): CompanyResponse => ({

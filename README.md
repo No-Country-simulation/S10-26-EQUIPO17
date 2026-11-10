@@ -101,6 +101,8 @@ La app de React corre en el navegador, así que debe usar `127.0.0.1`, nunca `ho
 - [x] `POST /api/projects`: solo una company puede subir un proyecto (JSON, sin archivos adjuntos).
 - [x] Endpoint de refresh.
 - [x] Endpoint de logout.
+- [x] `GET /api/auth/me`: identidad del usuario de la sesión.
+- [ ] Usar `GET /api/auth/me` en el frontend al cargar la página, y `POST /api/auth/refresh` solo si responde `401`.
 - [ ] Rechazar con `403` los requests con `Sec-Fetch-Site: cross-site` en `POST /api/auth/refresh` y `POST /api/auth/logout`, para que otro sitio no pueda cerrar la sesión.
 - [x] Eliminar `POST /users`, `POST /companies` y `GET /companies/:id`.
 - [ ] Pasar el formulario de registro del frontend a `POST /api/companies/register` (hoy llama a `POST /users`).

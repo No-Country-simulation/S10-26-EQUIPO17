@@ -60,6 +60,7 @@ Los `import` solo pueden apuntar **hacia adentro**: `infrastructure → adapters
 | POST   | `/api/auth/login` | `{ "email", "password" }`                         | `200 { user: { id, email, role } }` + cookies de sesión |
 | POST   | `/api/auth/refresh` | Sin body; usa la cookie `refresh_token`         | `200 { user: { id, email, role } }` + cookies de sesión nuevas |
 | POST   | `/api/auth/logout` | Sin body; usa la cookie `access_token`           | `204` + borra las cookies de sesión |
+| GET    | `/api/auth/me` (requiere sesión) | Sin body; usa la cookie `access_token` | `200 { user: { id, email, role } }` |
 | POST   | `/api/projects` (requiere sesión de company) | `{ "title", "description", "vertical", "businessSectors", "projectStage" }` | `201 { id, companyId, title, description, vertical, businessSectors, projectStage }` |
 
 Todas las rutas viven bajo `/api` (`API_PREFIX` en `adapters/in/http/api-prefix.ts`).
@@ -122,6 +123,18 @@ Tampoco pide una sesión válida:
   token sigue sirviendo del lado de Supabase, aunque el navegador ya no lo tenga.
 - Si Supabase Auth no está disponible, borra las cookies igual y deja el error en la consola de la
   API: una caída no deja al usuario con la sesión abierta en el navegador.
+
+### Consultar el usuario
+
+`GET /api/auth/me` devuelve quién es el dueño de la cookie `access_token`, con la misma forma que el
+login: `{ user: { id, email, role } }`. Solo devuelve la identidad; el perfil de la company no es
+parte de esta respuesta.
+
+A diferencia del refresh, no rota los tokens ni escribe cookies, así que se puede llamar en cada carga
+de la página. Responde con `Cache-Control: no-store` para que nadie guarde los datos del usuario.
+
+Sin cookie, o con un access token vencido o inválido, responde `401` y no borra las cookies: el
+refresh token puede seguir sirviendo, así que el frontend puede intentar `POST /api/auth/refresh`.
 
 ### Rutas protegidas
 
