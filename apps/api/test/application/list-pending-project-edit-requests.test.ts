@@ -13,8 +13,8 @@ import { ProjectStage } from "../../src/domain/value-objects/project-stage.js";
 import { Vertical } from "../../src/domain/value-objects/vertical.js";
 
 describe("ListPendingProjectEditRequests", () => {
-  const admin = { userId: "admin-1", role: "admin" } as const;
-  const company = { userId: "company-1", role: "company" } as const;
+  const admin = { userId: "admin-1", email: "admin-1@ejemplo.com", role: "admin" } as const;
+  const company = { userId: "company-1", email: "company-1@ejemplo.com", role: "company" } as const;
 
   function createRequest(): ProjectEditRequest {
     const project = Project.create({

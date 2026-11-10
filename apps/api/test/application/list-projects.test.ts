@@ -19,8 +19,8 @@ import { ProjectStage } from "../../src/domain/value-objects/project-stage.js";
 import { Vertical } from "../../src/domain/value-objects/vertical.js";
 
 describe("ListProjects", () => {
-  const owner = { userId: "user-1", role: "company" } as const;
-  const anotherOwner = { userId: "user-2", role: "company" } as const;
+  const owner = { userId: "user-1", email: "user-1@ejemplo.com", role: "company" } as const;
+  const anotherOwner = { userId: "user-2", email: "user-2@ejemplo.com", role: "company" } as const;
 
   let companies: InMemoryCompanyRepository;
   let projects: InMemoryProjectRepository;
@@ -100,7 +100,7 @@ describe("ListProjects", () => {
 
   it("rejects a user without the company role", async () => {
     await assert.rejects(
-      listProjects.execute({ userId: owner.userId, role: null }),
+      listProjects.execute({ userId: owner.userId, email: owner.email, role: null }),
       AccesoDenegadoError,
     );
   });
@@ -109,6 +109,7 @@ describe("ListProjects", () => {
     await assert.rejects(
       listProjects.execute({
         userId: "user-without-company",
+        email: "user-without-company@ejemplo.com",
         role: "company",
       }),
       AccesoDenegadoError,

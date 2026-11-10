@@ -121,11 +121,17 @@ export class SupabaseAuthProvider implements AuthProvider {
     if (isAccessTokenRefusal(error)) {
       throw new NoAutenticadoError();
     }
-    if (error || !data.user) {
-      throw new Error(`Supabase Auth: ${error?.message ?? "no user returned"}`, { cause: error });
+    if (error || !data.user?.email) {
+      throw new Error(`Supabase Auth: ${error?.message ?? "incomplete user returned"}`, {
+        cause: error,
+      });
     }
     const role = data.user.app_metadata.role;
-    return { userId: data.user.id, role: isUserRole(role) ? role : null };
+    return {
+      userId: data.user.id,
+      email: data.user.email,
+      role: isUserRole(role) ? role : null,
+    };
   }
 
   // "local" closes only this session. Supabase needs a valid access token for it: an expired one

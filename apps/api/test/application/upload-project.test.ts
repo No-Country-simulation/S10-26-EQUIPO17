@@ -21,7 +21,7 @@ const datos = {
 };
 
 describe("UploadProject", () => {
-  const owner = { userId: "user-1", role: "company" } as const;
+  const owner = { userId: "user-1", email: "user-1@ejemplo.com", role: "company" } as const;
   let projects: InMemoryProjectRepository;
   let uploadProject: UploadProjectUseCase;
 
@@ -61,7 +61,7 @@ describe("UploadProject", () => {
 
   it("rejects a user without the company role and saves nothing", async () => {
     await assert.rejects(
-      uploadProject.execute({ userId: owner.userId, role: null }, datos),
+      uploadProject.execute({ userId: owner.userId, email: owner.email, role: null }, datos),
       AccesoDenegadoError,
     );
     assert.equal(projects.count(), 0);
@@ -69,7 +69,7 @@ describe("UploadProject", () => {
 
   it("rejects a company role whose user has no company and saves nothing", async () => {
     await assert.rejects(
-      uploadProject.execute({ userId: "user-without-company", role: "company" }, datos),
+      uploadProject.execute({ userId: "user-without-company", email: "user-without-company@ejemplo.com", role: "company" }, datos),
       AccesoDenegadoError,
     );
     assert.equal(projects.count(), 0);

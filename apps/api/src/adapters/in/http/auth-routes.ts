@@ -1,12 +1,14 @@
 import { Router, type CookieOptions, type Response } from "express";
+import type { Authenticate } from "../../../application/ports/in/authenticate.js";
 import type { LogIn, Session } from "../../../application/ports/in/log-in.js";
 import type { LogOut } from "../../../application/ports/in/log-out.js";
 import type { RefreshUserSession } from "../../../application/ports/in/refresh-user-session.js";
 import { NoAutenticadoError } from "../../../domain/errors.js";
 import type { OpcionesDeCookie } from "../../../infrastructure/config/env.js";
 import { API_PREFIX } from "./api-prefix.js";
+import { autenticar, usuarioAutenticado } from "./autenticar.js";
 import { leerCuerpo, leerTexto } from "./cuerpo.js";
-import { sessionToResponse } from "./respuestas.js";
+import { authenticatedUserToResponse, sessionToResponse } from "./respuestas.js";
 
 /**
  * Supabase refresh tokens do not expire on their own; this caps how long a session can go
@@ -22,6 +24,7 @@ export function authRoutes(
   logIn: LogIn,
   refreshUserSession: RefreshUserSession,
   logOut: LogOut,
+  authenticate: Authenticate,
   cookies: OpcionesDeCookie,
 ): Router {
   const router = Router();
@@ -92,6 +95,13 @@ export function authRoutes(
 
     borrarSesion(res);
     res.status(204).end();
+  });
+
+  // Reads the identity from the access token without rotating anything. A 401 leaves the cookies
+  // alone: the frontend can still try /refresh with the refresh token.
+  router.get("/me", autenticar(authenticate), (_req, res) => {
+    res.set("Cache-Control", "no-store");
+    res.json(authenticatedUserToResponse(usuarioAutenticado(res)));
   });
 
   return router;

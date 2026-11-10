@@ -20,6 +20,7 @@ export interface RefreshedAuthSession extends AuthSession {
 /** Who an access token belongs to. */
 export interface AuthenticatedUser {
   userId: string;
+  email: string;
   /** Null when the user has no role yet, or one this API does not know. */
   role: UserRole | null;
 }

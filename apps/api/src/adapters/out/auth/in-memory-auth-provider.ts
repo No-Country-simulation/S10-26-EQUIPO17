@@ -76,8 +76,9 @@ export class InMemoryAuthProvider implements AuthProvider {
 
   async verifyAccessToken(accessToken: string): Promise<AuthenticatedUser> {
     const owner = this.accessTokens.get(accessToken);
-    if (!owner) throw new NoAutenticadoError();
-    return { userId: owner.userId, role: this.roleOf(owner.userId) };
+    const user = owner ? await this.users.findById(owner.userId) : null;
+    if (!owner || !user) throw new NoAutenticadoError();
+    return { userId: owner.userId, email: user.email.value, role: this.roleOf(owner.userId) };
   }
 
   async logOut(accessToken: string): Promise<void> {

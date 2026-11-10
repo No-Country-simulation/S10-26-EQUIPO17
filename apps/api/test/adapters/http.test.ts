@@ -366,7 +366,7 @@ describe("API HTTP", () => {
         await dependencias.auth.verifyAccessToken(
           valorDeCookie(res, "access_token"),
         ),
-        { userId, role: "company" },
+        { userId, email: credenciales.email, role: "company" },
       );
     });
 
@@ -519,6 +519,70 @@ describe("API HTTP", () => {
       assertCookiesBorradas(res);
       assert.equal(logs.mock.callCount(), 1);
       assert.equal(logs.mock.calls[0]?.arguments[0], outage);
+    });
+  });
+
+  describe("GET /auth/me", () => {
+    const clave = "clave-segura";
+
+    /** Registers a user, logs in and returns its id and access_token cookie. */
+    const sesionDe = async (email: string, role?: "company") => {
+      const id = await dependencias.auth.register(Email.create(email), clave, role);
+      const res = await post("/auth/login", JSON.stringify({ email, password: clave }));
+      return { id, accessToken: valorDeCookie(res, "access_token") };
+    };
+
+    const consultar = (cookie?: string) =>
+      fetch(`${base}/auth/me`, { headers: cookie ? { Cookie: cookie } : {} });
+
+    it("responde 200 con la identidad del usuario sin tocar las cookies ni dejarla en caché", async () => {
+      const { id, accessToken } = await sesionDe("me@ejemplo.com", "company");
+
+      const res = await consultar(`access_token=${accessToken}`);
+
+      assert.equal(res.status, 200);
+      assert.deepEqual(await res.json(), {
+        user: { id, email: "me@ejemplo.com", role: "company" },
+      });
+      assert.equal(res.headers.get("cache-control"), "no-store");
+      assert.deepEqual(res.headers.getSetCookie(), []);
+    });
+
+    it("devuelve role null para un usuario sin rol", async () => {
+      const { accessToken } = await sesionDe("me-sin-rol@ejemplo.com");
+
+      const res = await consultar(`access_token=${accessToken}`);
+
+      assert.equal(res.status, 200);
+      assert.equal(((await res.json()) as { user: { role: unknown } }).user.role, null);
+    });
+
+    it("responde 401 sin access token, o con uno inválido o que no es texto", async () => {
+      const casos = [
+        undefined,
+        "access_token=desconocido",
+        "access_token=",
+        `access_token=${encodeURIComponent('j:{"a":1}')}`,
+      ];
+
+      for (const cookie of casos) {
+        const res = await consultar(cookie);
+
+        assert.equal(res.status, 401, cookie);
+        assert.deepEqual(await res.json(), { error: "Authentication required" }, cookie);
+      }
+    });
+
+    it("responde 401 después de cerrar la sesión", async () => {
+      const { accessToken } = await sesionDe("me-logout@ejemplo.com", "company");
+      await fetch(`${base}/auth/logout`, {
+        method: "POST",
+        headers: { Cookie: `access_token=${accessToken}` },
+      });
+
+      const res = await consultar(`access_token=${accessToken}`);
+
+      assert.equal(res.status, 401);
     });
   });
 

@@ -25,7 +25,10 @@ export function crearApp(
   api.get("/", (_req, res) => {
     res.json({ status: "ok" });
   });
-  api.use("/auth", authRoutes(casos.logIn, casos.refreshUserSession, casos.logOut, cookies));
+  api.use(
+    "/auth",
+    authRoutes(casos.logIn, casos.refreshUserSession, casos.logOut, casos.authenticate, cookies),
+  );
   api.use("/companies", companyRoutes(casos.registerCompany));
   api.use(
     "/projects",

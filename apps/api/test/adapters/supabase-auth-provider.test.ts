@@ -280,7 +280,9 @@ describe("SupabaseAuthProvider.refreshSession", () => {
 
 describe("SupabaseAuthProvider.verifyAccessToken", () => {
   type GetUserResult = {
-    data: { user: { id: string; app_metadata: Record<string, unknown> } | null };
+    data: {
+      user: { id: string; email?: string; app_metadata: Record<string, unknown> } | null;
+    };
     error: Error | null;
   };
 
@@ -296,17 +298,23 @@ describe("SupabaseAuthProvider.verifyAccessToken", () => {
 
   const rejected = (error: Error): GetUserResult => ({ data: { user: null }, error });
 
-  it("asks Supabase about the token and maps the user id and role", async () => {
+  it("asks Supabase about the token and maps the user id, email and role", async () => {
     const tokens: unknown[] = [];
     const auth = providerWith(
       adminWith(
-        { data: { user: { id: "auth-id", app_metadata: { role: "company" } } }, error: null },
+        {
+          data: {
+            user: { id: "auth-id", email: "ana@ejemplo.com", app_metadata: { role: "company" } },
+          },
+          error: null,
+        },
         tokens,
       ),
     );
 
     assert.deepEqual(await auth.verifyAccessToken("token"), {
       userId: "auth-id",
+      email: "ana@ejemplo.com",
       role: "company",
     });
     assert.deepEqual(tokens, ["token"]);
@@ -315,10 +323,24 @@ describe("SupabaseAuthProvider.verifyAccessToken", () => {
   it("returns a null role when app_metadata has none or an unknown one", async () => {
     for (const app_metadata of [{}, { role: "unknown-role" }]) {
       const auth = providerWith(
-        adminWith({ data: { user: { id: "auth-id", app_metadata } }, error: null }),
+        adminWith({
+          data: { user: { id: "auth-id", email: "ana@ejemplo.com", app_metadata } },
+          error: null,
+        }),
       );
       assert.equal((await auth.verifyAccessToken("token")).role, null);
     }
+  });
+
+  it("fails instead of reporting the user as logged out when Supabase returns no email", async () => {
+    const auth = providerWith(
+      adminWith({ data: { user: { id: "auth-id", app_metadata: {} } }, error: null }),
+    );
+
+    await assert.rejects(auth.verifyAccessToken("token"), (error: Error) => {
+      assert.ok(!(error instanceof NoAutenticadoError));
+      return true;
+    });
   });
 
   it("translates a token Supabase refuses", async () => {
