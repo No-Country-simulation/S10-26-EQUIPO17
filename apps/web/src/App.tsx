@@ -1,11 +1,10 @@
 // apps/web/src/App.tsx
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./features/auth/AuthProvider";
 import { RequireAuth } from "./features/auth/RequireAuth";
 import { LoginPage } from "./features/auth/views/LoginPage";
 import { CompanyDashboard } from "./features/dashboard-company/views/CompanyDashboard";
 import { PublicDashboard } from "./features/dashboard-public/views/PublicDashboard";
-import { NewChallengeForm } from "./features/project-submission/views/NewChallengeForm";
 import { NewProjectForm } from "./features/project-submission/views/NewProjectForm";
 import { RegisterCompanyForm } from "./features/project-submission/views/RegisterCompanyForm";
 import { UploadChallengePage } from "./features/project-submission/views/UploadChallengePage";
@@ -22,7 +21,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/cargar-desafio",
-    element: <NewChallengeForm />, // Pieza 2: Formulario inicial (invitado)
+    element: <Navigate to="/subir-proyecto" replace />,
   },
   {
     path: "/crear-cuenta",

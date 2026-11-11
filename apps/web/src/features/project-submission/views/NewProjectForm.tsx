@@ -24,6 +24,7 @@ export function NewProjectForm() {
       subtitle="Tu cuenta está lista. Cuéntanos qué quieres resolver."
       submitLabel="Publicar proyecto"
       submitIcon="rocket_launch"
+      onSkipProject={() => navigate("/dashboard", { replace: true })}
       onSubmit={handleSubmit}
     />
   );
