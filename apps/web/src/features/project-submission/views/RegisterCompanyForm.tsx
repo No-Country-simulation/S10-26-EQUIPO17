@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { track } from "../../../shared/analytics/analytics";
+import { RequireGuest } from "../../auth/RequireGuest";
 import { useAuth } from "../../auth/useAuth";
 import { registerFlow } from "../challengeFlows";
 import { ChallengeWizard } from "../components/ChallengeWizard";
@@ -9,16 +11,23 @@ import { registerCompany } from "../submissionService";
 export function RegisterCompanyForm() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (values: ChallengeFormValues) => {
-    await registerCompany(values);
-    track("registered_company");
-    // El registro no abre sesión: el login deja las cookies que exige POST /projects.
-    await signIn(values.email, values.password);
-    navigate("/proyecto/nuevo");
+    setSubmitting(true);
+    try {
+      await registerCompany(values);
+      track("registered_company");
+      // El registro no abre sesión: el login deja las cookies que exige POST /projects.
+      await signIn(values.email, values.password);
+      navigate("/proyecto/nuevo");
+    } catch (error) {
+      setSubmitting(false);
+      throw error;
+    }
   };
 
-  return (
+  const content = (
     <ChallengeWizard
       flow={registerFlow}
       heading={
@@ -32,4 +41,6 @@ export function RegisterCompanyForm() {
       onSubmit={handleSubmit}
     />
   );
+
+  return <RequireGuest submitting={submitting}>{content}</RequireGuest>;
 }

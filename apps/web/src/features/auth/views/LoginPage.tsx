@@ -7,6 +7,7 @@ import { PublicLayout } from "../../../shared/layouts/PublicLayout";
 import { ApiError } from "../../../shared/api/apiClient";
 import { track } from "../../../shared/analytics/analytics";
 import { FormField } from "../../project-submission/components/FormField";
+import { RequireGuest } from "../RequireGuest";
 import { useAuth } from "../useAuth";
 
 const loginSchema = z.object({
@@ -22,6 +23,7 @@ export function LoginPage() {
   const location = useLocation();
   const redirectTo = (location.state as { from?: string } | null)?.from ?? "/dashboard";
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [completingSignIn, setCompletingSignIn] = useState(false);
 
   const {
     register,
@@ -34,9 +36,11 @@ export function LoginPage() {
 
   const onSubmit = async ({ email, password }: LoginValues) => {
     setSubmitError(null);
+    setCompletingSignIn(true);
     try {
       await signIn(email, password);
     } catch (error) {
+      setCompletingSignIn(false);
       const status = error instanceof ApiError ? String(error.status) : "network";
       track("login_failed", { status });
       setSubmitError(
@@ -50,7 +54,7 @@ export function LoginPage() {
     navigate(redirectTo, { replace: true });
   };
 
-  return (
+  const content = (
     <PublicLayout>
       <div className="relative overflow-hidden px-6 py-16 lg:px-8">
         <div className="pointer-events-none absolute -top-40 left-1/4 size-96 rounded-full bg-primary/10 blur-[120px]" />
@@ -100,4 +104,6 @@ export function LoginPage() {
       </div>
     </PublicLayout>
   );
+
+  return <RequireGuest submitting={completingSignIn}>{content}</RequireGuest>;
 }

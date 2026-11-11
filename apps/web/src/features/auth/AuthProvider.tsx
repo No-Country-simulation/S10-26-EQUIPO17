@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
-import { logIn, refreshSession, type SessionUser } from "./authService";
+import { logIn, logOut, refreshSession, type SessionUser } from "./authService";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -24,7 +24,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return session;
   }, []);
 
-  const value = useMemo(() => ({ user, loading, signIn }), [user, loading, signIn]);
+  const signOut = useCallback(async () => {
+    await logOut();
+    setUser(null);
+  }, []);
+
+  const value = useMemo(() => ({ user, loading, signIn, signOut }), [user, loading, signIn, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

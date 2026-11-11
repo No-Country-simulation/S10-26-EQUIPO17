@@ -18,10 +18,13 @@ export async function logIn(email: string, password: string): Promise<SessionUse
   return user;
 }
 
+export async function logOut(): Promise<void> {
+  await apiClient<void>("/auth/logout", { method: "POST" });
+}
+
 let pendingRefresh: Promise<SessionUser | null> | null = null;
 
-// No hay GET /me: el refresh con la cookie `refresh_token` hace de "¿quién soy?".
-// Rota los tokens, así que las llamadas simultáneas (StrictMode) comparten una sola petición.
+// El refresh recupera la sesión y rota los tokens; las llamadas simultáneas comparten la petición.
 export function refreshSession(): Promise<SessionUser | null> {
   pendingRefresh ??= apiClient<SessionResponse>("/auth/refresh", { method: "POST" })
     .then(({ user }) => user)
