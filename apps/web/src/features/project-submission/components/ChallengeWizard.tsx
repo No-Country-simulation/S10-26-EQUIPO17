@@ -24,6 +24,7 @@ interface ChallengeWizardProps {
   submitIcon: string;
   // Si no hay mensaje de éxito no se muestra el toast (p. ej. cuando se redirige a otra ruta).
   successMessage?: string;
+  onFirstStepBack?: () => void;
   onSubmit: (values: ChallengeFormValues) => Promise<void>;
 }
 
@@ -34,6 +35,7 @@ export function ChallengeWizard({
   submitLabel,
   submitIcon,
   successMessage,
+  onFirstStepBack,
   onSubmit,
 }: ChallengeWizardProps) {
   const form = useForm<ChallengeFormValues>({
@@ -132,8 +134,8 @@ export function ChallengeWizard({
                 <div className="flex items-center justify-between gap-3">
                   <button
                     type="button"
-                    onClick={wizard.back}
-                    disabled={wizard.isFirstStep}
+                    onClick={wizard.isFirstStep ? onFirstStepBack : wizard.back}
+                    disabled={isSubmitting || (wizard.isFirstStep && !onFirstStepBack)}
                     className="btn border-neutral bg-base-300"
                   >
                     <span className="material-symbols-outlined text-[20px]">arrow_back</span>
