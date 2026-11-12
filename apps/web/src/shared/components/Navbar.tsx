@@ -32,13 +32,13 @@ export function Navbar() {
   };
 
   return (
-    <header className="navbar fixed inset-x-0 top-0 z-50 h-20 border-b border-neutral bg-base-200/90 px-6 backdrop-blur-xl lg:px-8">
-      <div className="mx-auto flex w-full max-w-360 items-center justify-between">
-        <Link to="/" className="flex items-center gap-3">
+    <header className="navbar fixed inset-x-0 top-0 z-50 h-20 border-b border-neutral bg-base-200/90 px-3 backdrop-blur-xl sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-360 items-center justify-between gap-2">
+        <Link to="/" className="flex shrink-0 items-center gap-3">
           <div className="grid size-10 place-items-center rounded-xl border border-neutral bg-base-300 text-secondary">
             <span className="material-symbols-outlined">terminal</span>
           </div>
-          <div className="flex flex-col leading-tight">
+          <div className="hidden flex-col leading-tight sm:flex">
             <span className="text-xl font-bold text-white">No Country</span>
             <span className="text-gradient text-[11px] font-semibold uppercase tracking-widest">
               Experiencia de trabajo real
@@ -46,37 +46,58 @@ export function Navbar() {
           </div>
         </Link>
 
-        <ul className="hidden items-center gap-8 xl:flex">
-          {links.map((l) => (
-            <li key={l.href}>
-              <a
-                href={l.href}
-                onClick={() => track(l.event, { location: "navbar" })}
-                className={`text-sm font-medium transition-colors hover:text-secondary ${l.strong ? "" : "text-neutral-content"}`}
-              >
-                {l.label}
-              </a>
-            </li>
-          ))}
-        </ul>
+        {!loading && !user && (
+          <ul className="hidden items-center gap-8 2xl:flex">
+            {links.map((l) => (
+              <li key={l.href}>
+                <a
+                  href={l.href}
+                  onClick={() => track(l.event, { location: "navbar" })}
+                  className={`text-sm font-medium transition-colors hover:text-secondary ${l.strong ? "" : "text-neutral-content"}`}
+                >
+                  {l.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {!loading && user && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => void handleSignOut()}
-                disabled={signingOut}
-                className="btn btn-sm border-neutral bg-base-300"
-              >
-                {signingOut ? "Cerrando sesión..." : "Cerrar sesión"}
-              </button>
-              {signOutError && (
-                <p role="alert" className="absolute right-0 top-full mt-2 w-64 rounded-box bg-base-300 p-3 text-sm text-error shadow-lg">
-                  {signOutError}
-                </p>
+            <>
+              {user.role === "company" && (
+                <Link to="/dashboard" className="text-center text-xs font-semibold leading-tight text-secondary hover:underline sm:text-sm">
+                  Mis proyectos
+                </Link>
               )}
-            </div>
+              {user.role === "admin" && (
+                <span className="text-center text-xs font-semibold leading-tight text-secondary sm:text-sm">
+                  Panel de administrador
+                </span>
+              )}
+              <div className="flex min-w-0 flex-col items-center leading-tight" aria-label="Sesión actual">
+                <span aria-hidden="true" className="material-symbols-outlined text-xl text-secondary">person</span>
+                <span className="text-center text-xs text-neutral-content">
+                  Bienvenido · {user.role === "company" ? "Empresa" : user.role === "admin" ? "Administrador" : "Sin rol"}
+                </span>
+                <span className="max-w-32 truncate text-xs text-white sm:max-w-56" title={user.email}>{user.email}</span>
+              </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => void handleSignOut()}
+                  disabled={signingOut}
+                  className="btn btn-sm border-neutral bg-base-300"
+                >
+                  {signingOut ? "Cerrando sesión..." : "Cerrar sesión"}
+                </button>
+                {signOutError && (
+                  <p role="alert" className="absolute right-0 top-full mt-2 w-64 rounded-box bg-base-300 p-3 text-sm text-error shadow-lg">
+                    {signOutError}
+                  </p>
+                )}
+              </div>
+            </>
           )}
           {!loading && !user && (
             <>

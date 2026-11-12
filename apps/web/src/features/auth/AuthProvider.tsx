@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
-import { logIn, logOut, refreshSession, type SessionUser } from "./authService";
+import { getSession, logIn, logOut, type SessionUser } from "./authService";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -8,10 +8,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    refreshSession()
+    getSession()
       .then((session) => active && setUser(session))
       // Un fallo de red se trata como "sin sesión"; la guardia enviará al login.
-      .catch(() => active && setUser(null))
+      .catch((error: unknown) => {
+        console.error("No se pudo recuperar la sesión:", error);
+        if (active) setUser(null);
+      })
       .finally(() => active && setLoading(false));
     return () => {
       active = false;

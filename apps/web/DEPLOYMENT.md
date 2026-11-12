@@ -21,6 +21,8 @@ Debido a que el frontend se encuentra dentro de la carpeta `/apps/web` del monor
 
 El cliente HTTP (`src/shared/api/apiClient.ts`) llama por defecto a `/api` en el mismo origen de la web, así que **no hace falta definir `VITE_API_URL`** en Vercel. Si se define, tiene que ser `/api`: una URL absoluta a la EC2 haría que las cookies de sesión pasen a ser de terceros (ver la sección siguiente).
 
+Al abrir la aplicación, la sesión se consulta con `GET /api/auth/me`. Si responde `401`, se intenta `POST /api/auth/refresh` con la cookie de sesión antes de considerar que no hay usuario autenticado.
+
 ---
 
 ## 🛣️ Enrutamiento y Soporte para Single Page Application (SPA)
