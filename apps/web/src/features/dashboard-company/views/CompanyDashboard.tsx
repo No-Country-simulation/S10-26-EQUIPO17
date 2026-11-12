@@ -14,8 +14,15 @@ export function CompanyDashboard() {
     { key: string; projects: Project[]; error: null } | { key: string; projects: null; error: string } | null
   >(null);
   const [attempt, setAttempt] = useState(0);
+  const [notice, setNotice] = useState(0);
   const requestKey = `${user?.id ?? ""}:${attempt}`;
   const currentResult = result?.key === requestKey ? result : null;
+
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(0), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -54,6 +61,8 @@ export function CompanyDashboard() {
             result={currentResult}
             publishedProjectId={publishedProject?.id}
             onRetry={() => setAttempt((value) => value + 1)}
+            onEditRequested={() => setNotice((value) => value + 1)}
+            canEdit={user?.role === "company"}
           />
 
           <Link to="/proyecto/nuevo" className="btn border-0 bg-brand-gradient text-white">
@@ -61,6 +70,14 @@ export function CompanyDashboard() {
             <span className="material-symbols-outlined text-[20px]">add</span>
           </Link>
         </div>
+        {notice > 0 && (
+          <div className="toast toast-end toast-bottom z-50">
+            <div role="status" className="alert border border-secondary bg-base-300 text-base-content shadow-lg">
+              <span>Solicitud de cambio enviada correctamente. El proyecto se actualizará cuando sea aprobada.</span>
+              <button type="button" className="btn btn-ghost btn-sm" aria-label="Cerrar notificación" onClick={() => setNotice(0)}>✕</button>
+            </div>
+          </div>
+        )}
       </div>
     </PublicLayout>
   );

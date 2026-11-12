@@ -17,6 +17,10 @@ const project = {
 
 let server;
 let listProjects;
+let submitProjectEditRequest;
+let projectEditSchema;
+let hasProjectChanges;
+let projectEditValues;
 let ProjectCard;
 let ProjectsList;
 let NewProjectForm;
@@ -26,7 +30,8 @@ const originalFetch = globalThis.fetch;
 
 before(async () => {
   server = await createServer({ server: { middlewareMode: true }, appType: "custom" });
-  ({ listProjects } = await server.ssrLoadModule("/src/features/dashboard-company/projectService.ts"));
+  ({ listProjects, submitProjectEditRequest } = await server.ssrLoadModule("/src/features/dashboard-company/projectService.ts"));
+  ({ projectEditSchema, hasProjectChanges, projectEditValues } = await server.ssrLoadModule("/src/features/dashboard-company/projectEditSchema.ts"));
   ({ ProjectCard } = await server.ssrLoadModule("/src/features/dashboard-company/components/ProjectCard.tsx"));
   ({ ProjectsList } = await server.ssrLoadModule("/src/features/dashboard-company/components/ProjectsList.tsx"));
   ({ NewProjectForm } = await server.ssrLoadModule("/src/features/project-submission/views/NewProjectForm.tsx"));
@@ -63,6 +68,52 @@ test("distingue una lista vacía de respuestas inválidas y errores", async () =
   await assert.rejects(listProjects(), { status: 401 });
 });
 
+test("valida los cinco campos y detecta cambios reales sin depender del orden de sectores", () => {
+  const original = projectEditValues(project);
+  assert.equal(projectEditSchema.safeParse(original).success, true);
+  assert.equal(hasProjectChanges(original, project), false);
+  assert.equal(hasProjectChanges({ ...original, title: ` ${original.title} `, businessSectors: ["IT", "Product"] }, project), false);
+  for (const [field, value] of Object.entries({
+    title: "Nuevo título",
+    description: "Nueva descripción",
+    vertical: "Fintech",
+    businessSectors: ["Product"],
+    projectStage: "Idea",
+  })) assert.equal(hasProjectChanges({ ...original, [field]: value }, project), true, field);
+  for (const [field, value] of Object.entries({
+    title: " ",
+    description: "",
+    vertical: "Desconocida",
+    businessSectors: [],
+    projectStage: "Desconocida",
+  })) assert.equal(projectEditSchema.safeParse({ ...original, [field]: value }).success, false, field);
+  assert.equal(projectEditSchema.safeParse({ ...original, businessSectors: ["Product", "Otro"] }).success, false);
+  assert.equal(projectEditSchema.safeParse({ ...original, businessSectors: "Product" }).success, false);
+  for (const vertical of ["E-commerce", "Fintech", "Healthtech", "Edtech", "Logistics"]) {
+    assert.equal(projectEditSchema.safeParse({ ...original, vertical }).success, true, vertical);
+  }
+  for (const projectStage of ["MVP", "Idea", "POC", "Scaling", "Legacy"]) {
+    assert.equal(projectEditSchema.safeParse({ ...original, projectStage }).success, true, projectStage);
+  }
+  assert.equal(projectEditSchema.safeParse({ ...original, businessSectors: ["Product", "IT", "Marketing", "Software Development"] }).success, true);
+});
+
+test("envía la solicitud al proyecto correcto con los cinco campos y propaga errores", async () => {
+  let call;
+  globalThis.fetch = async (url, options) => {
+    call = { url, options };
+    return Response.json({ id: "request-1" }, { status: 201 });
+  };
+  const values = { ...projectEditValues(project), title: "Nuevo título" };
+  await submitProjectEditRequest("project/1", values);
+  assert.equal(call.url, "/api/projects/project%2F1/edit-requests");
+  assert.equal(call.options.method, "POST");
+  assert.deepEqual(JSON.parse(call.options.body), values);
+  assert.notEqual(call.options.credentials, "omit");
+  globalThis.fetch = async () => Response.json({ error: "Solicitud pendiente" }, { status: 409 });
+  await assert.rejects(submitProjectEditRequest(project.id, values), { status: 409 });
+});
+
 test("muestra el detalle con iconos del formulario y oculta los identificadores", () => {
   const html = renderToStaticMarkup(React.createElement(ProjectCard, { project, newlyPublished: true }));
   for (const text of ["Plataforma educativa", "Gestión de tareas", "E-commerce", "Producto", "IT &amp; Cloud Ops", "Proyecto publicado", "Pending", "status-warning", "motion-safe:animate-pulse", "hover-3d", "aura-holo", "shopping_cart", "inventory_2", "cloud", "modal-box"]) {
@@ -91,6 +142,9 @@ test("muestra el detalle con iconos del formulario y oculta los identificadores"
   assert.match(scaling.slice(0, scaling.indexOf("</article>")), /Escalando/);
   const other = renderToStaticMarkup(React.createElement(ProjectCard, { project }));
   assert.ok(!other.includes("Proyecto publicado"));
+  assert.doesNotMatch(other, /Editar proyecto/);
+  const editable = renderToStaticMarkup(React.createElement(ProjectCard, { project, canEdit: true }));
+  assert.match(editable, /Editar proyecto/);
 });
 
 test("muestra carga, error, vacío o todas las tarjetas según la respuesta", () => {

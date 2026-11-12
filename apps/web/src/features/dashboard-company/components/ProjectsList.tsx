@@ -7,10 +7,14 @@ export function ProjectsList({
   result,
   publishedProjectId,
   onRetry,
+  onEditRequested,
+  canEdit,
 }: {
   result: ProjectsResult | null;
   publishedProjectId?: string;
   onRetry: () => void;
+  onEditRequested: () => void;
+  canEdit: boolean;
 }) {
   if (!result) {
     return (
@@ -46,7 +50,7 @@ export function ProjectsList({
       <h2 id="projects-heading" className="text-2xl font-bold text-white">Tus proyectos</h2>
       <div className="grid gap-6 md:grid-cols-2">
         {result.projects.map((project) => (
-          <ProjectCard key={project.id} project={project} newlyPublished={project.id === publishedProjectId} />
+          <ProjectCard key={project.id} project={project} newlyPublished={project.id === publishedProjectId} canEdit={canEdit} onEditRequested={onEditRequested} />
         ))}
       </div>
     </section>
