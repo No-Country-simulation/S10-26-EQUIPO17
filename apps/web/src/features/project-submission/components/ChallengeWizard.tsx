@@ -43,6 +43,7 @@ export function ChallengeWizard({
   const form = useForm<ChallengeFormValues>({
     resolver: zodResolver(flow.schema) as unknown as Resolver<ChallengeFormValues>,
     defaultValues: challengeDefaultValues,
+    mode: flow.id === "register" ? "onChange" : "onSubmit",
   });
   const values = useWatch({ control: form.control }) as ChallengeFormValues;
   const wizard = useChallengeWizard(form.trigger, flow.steps, (stepIndex) =>
@@ -107,7 +108,7 @@ export function ChallengeWizard({
 
           <div className="grid items-start gap-8 lg:grid-cols-12">
             <FormProvider {...form}>
-              <form noValidate onSubmit={handleSubmit} className="space-y-6 lg:col-span-8">
+              <form noValidate onSubmit={handleSubmit} className={`${flow.id === "register" ? "login-validation " : ""}space-y-6 lg:col-span-8`}>
                 <section className="rounded-box border border-neutral bg-base-200 p-6 shadow-2xl md:p-8">
                   <header className="mb-6 flex items-start justify-between gap-4">
                     <div>
@@ -145,13 +146,14 @@ export function ChallengeWizard({
                   </button>
 
                   {wizard.isLastStep ? (
-                    <button type="submit" disabled={isSubmitting} className="btn bg-brand-gradient border-0 text-white">
+                    <button key="submit" type="submit" disabled={isSubmitting} className="btn bg-brand-gradient border-0 text-white">
                       {isSubmitting && <span className="loading loading-spinner loading-sm" />}
                       {submitLabel}
                       <span className="material-symbols-outlined text-[20px]">{submitIcon}</span>
                     </button>
                   ) : (
                     <button
+                      key="next"
                       type="button"
                       onClick={() => void wizard.next()}
                       className="btn bg-brand-gradient border-0 text-white"

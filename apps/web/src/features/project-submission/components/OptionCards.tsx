@@ -5,11 +5,13 @@ interface OptionCardsProps<T extends string> {
   value: string;
   onChange: (value: T) => void;
   className?: string;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 }
 
-export function OptionCards<T extends string>({ options, value, onChange, className = "" }: OptionCardsProps<T>) {
+export function OptionCards<T extends string>({ options, value, onChange, className = "", "aria-invalid": invalid, "aria-describedby": describedBy }: OptionCardsProps<T>) {
   return (
-    <div role="radiogroup" className={`grid gap-3 ${className}`}>
+    <div role="radiogroup" aria-invalid={invalid} aria-describedby={describedBy} className={`grid gap-3 ${className}`}>
       {options.map((option) => {
         const selected = option.value === value;
         return (
