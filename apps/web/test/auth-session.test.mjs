@@ -74,6 +74,7 @@ test("muestra la identidad solo con sesión y conserva cerrar sesión", () => {
   const admin = render({ ...user, role: "admin" });
   assert.match(admin, /Bienvenido · Administrador/);
   assert.match(admin, /Panel de administrador/);
+  assert.match(admin, /href="\/dashboard"[^>]*>Panel de administrador<\/a>/);
   assert.doesNotMatch(admin, /Mis proyectos/);
   const noRole = render({ ...user, role: null });
   assert.match(noRole, /Bienvenido · Sin rol/);

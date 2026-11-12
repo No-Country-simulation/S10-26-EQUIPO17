@@ -71,9 +71,9 @@ export function Navbar() {
                 </Link>
               )}
               {user.role === "admin" && (
-                <span className="text-center text-xs font-semibold leading-tight text-secondary sm:text-sm">
+                <Link to="/dashboard" className="text-center text-xs font-semibold leading-tight text-secondary hover:underline sm:text-sm">
                   Panel de administrador
-                </span>
+                </Link>
               )}
               <div className="flex min-w-0 flex-col items-center leading-tight" aria-label="Sesión actual">
                 <span aria-hidden="true" className="material-symbols-outlined text-xl text-secondary">person</span>

@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./features/auth/AuthProvider";
 import { RequireAuth } from "./features/auth/RequireAuth";
 import { LoginPage } from "./features/auth/views/LoginPage";
-import { CompanyDashboard } from "./features/dashboard-company/views/CompanyDashboard";
+import { Dashboard } from "./features/auth/views/Dashboard";
 import { PublicDashboard } from "./features/dashboard-public/views/PublicDashboard";
 import { NewChallengeForm } from "./features/project-submission/views/NewChallengeForm";
 import { NewProjectForm } from "./features/project-submission/views/NewProjectForm";
@@ -44,7 +44,7 @@ const router = createBrowserRouter([
     path: "/dashboard",
     element: (
       <RequireAuth>
-        <CompanyDashboard />
+        <Dashboard />
       </RequireAuth>
     ),
   },
