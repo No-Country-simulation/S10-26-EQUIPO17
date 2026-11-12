@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { track } from "../../../shared/analytics/analytics";
 import { useAnalyticsRole } from "../../auth/useAnalyticsRole";
+import { talentLoginUrl } from "../data/landingData";
 
 export function CtaBanner() {
   const role = useAnalyticsRole();
@@ -23,7 +24,7 @@ export function CtaBanner() {
 
           <div className="mb-10 flex flex-wrap items-center justify-center gap-4">
             <a
-              href="#talento"
+              href={talentLoginUrl}
               onClick={() => track("clicked_talent_cta_banner", { location: "cta_banner", role })}
               className="btn btn-lg gap-2 border-0 bg-brand-gradient text-base font-bold text-white shadow-[0_0_30px_rgba(255,0,148,0.4)] transition-all hover:opacity-90 active:scale-[0.98]"
             >
@@ -39,7 +40,7 @@ export function CtaBanner() {
               Comparte tu Proyecto
             </Link>
             <a
-              href="#instituciones"
+              href="https://www.nocountry.tech/para-instituciones"
               onClick={() => track("clicked_institution", { location: "cta_banner", role })}
               className="btn btn-lg gap-2 border border-accent/40 bg-accent/10 text-base font-bold text-indigo-300 shadow-[0_0_24px_rgba(99,102,241,0.16)] transition-all hover:border-accent hover:bg-accent/20 active:scale-[0.98]"
             >

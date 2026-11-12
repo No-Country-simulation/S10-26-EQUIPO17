@@ -4,11 +4,11 @@ import { track, type AnalyticsEvent } from "../analytics/analytics";
 import { useAuth } from "../../features/auth/useAuth";
 
 const links: { label: string; href: string; event: AnalyticsEvent; strong?: boolean }[] = [
-  { label: "Para centros de estudio", href: "#instituciones", event: "clicked_nav_institutions", strong: true },
-  { label: "Para Empresas", href: "#empresas", event: "clicked_nav_companies", strong: true },
+  { label: "Para centros de estudio", href: "https://www.nocountry.tech/simulacion-laboral/como-funciona", event: "clicked_nav_institutions", strong: true },
+  { label: "Para Empresas", href: "https://www.nocountry.tech/para-empresas/contratar", event: "clicked_nav_companies", strong: true },
   { label: "Para profesionales emergentes", href: "#talento", event: "clicked_nav_talent", strong: true },
-  { label: "Cómo funciona", href: "#simulacion", event: "clicked_nav_how_it_works" },
-  { label: "Métricas públicas en vivo", href: "#public-dashboard", event: "clicked_nav_public_metrics" },
+  { label: "Cómo funciona", href: "https://www.nocountry.tech/simulacion-laboral/paradigma", event: "clicked_nav_how_it_works" },
+  { label: "Métricas públicas en vivo", href: "https://www.nocountry.tech/", event: "clicked_nav_public_metrics" },
 ];
 
 export function Navbar() {
