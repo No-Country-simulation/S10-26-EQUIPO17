@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { track } from "../../../shared/analytics/analytics";
+import { useAnalyticsRole } from "../../auth/useAnalyticsRole";
 import { PublicLayout } from "../../../shared/layouts/PublicLayout";
 import {
   Badge,
@@ -40,6 +41,7 @@ const benefits = [
 ];
 
 export function UploadChallengePage() {
+  const role = useAnalyticsRole();
   return (
     <PublicLayout>
       <div className="relative min-h-screen overflow-hidden bg-base-100 px-4 pb-16 pt-4 text-base-content lg:px-6">
@@ -104,7 +106,7 @@ export function UploadChallengePage() {
                 <div className="mt-8 border-t border-neutral pt-4">
                   <Link
                     to="/crear-cuenta"
-                    onClick={() => track("clicked_create_account")}
+                    onClick={() => track("clicked_create_account", { role })}
                     className="btn w-full border-0 bg-gradient-to-r from-accent to-secondary text-sm text-white transition-all hover:brightness-110"
                   >
                     Crear cuenta y comenzar

@@ -21,7 +21,23 @@ export type AnalyticsEvent =
   | "wizard_submit_failed"
   | "registered_company"
   | "logged_in"
-  | "login_failed";
+  | "login_failed"
+  | "clicked_public_metrics_hero"
+  | "clicked_talent_cta_banner"
+  | "clicked_company_dashboard_nav"
+  | "clicked_admin_dashboard_nav"
+  | "logout_succeeded"
+  | "logout_failed"
+  | "clicked_register_from_login"
+  | "clicked_company_new_project"
+  | "opened_company_project"
+  | "started_company_project_edit"
+  | "cancelled_company_project_edit"
+  | "company_project_edit_submitted"
+  | "company_project_edit_failed"
+  | "opened_admin_edit_review"
+  | "admin_edit_review_succeeded"
+  | "admin_edit_review_failed";
 
 const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
 const host = (import.meta.env.VITE_POSTHOG_HOST as string | undefined) || "https://us.i.posthog.com";

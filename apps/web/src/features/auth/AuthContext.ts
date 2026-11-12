@@ -6,6 +6,7 @@ export interface AuthState {
   // true mientras se comprueba si ya hay una sesión al abrir la app.
   loading: boolean;
   signIn: (email: string, password: string) => Promise<SessionUser>;
+  signOut: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthState | null>(null);

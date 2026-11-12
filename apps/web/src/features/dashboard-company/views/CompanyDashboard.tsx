@@ -1,18 +1,49 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { ApiError } from "../../../shared/api/apiClient";
+import { track } from "../../../shared/analytics/analytics";
 import { PublicLayout } from "../../../shared/layouts/PublicLayout";
-import {
-  labelOf,
-  sectorOptions,
-  stageOptions,
-  verticalOptions,
-} from "../../project-submission/challengeFormOptions";
 import type { Project } from "../../project-submission/submissionService";
 import { useAuth } from "../../auth/useAuth";
+import { ProjectsList } from "../components/ProjectsList";
+import { listProjects } from "../projectService";
 
-// Mientras no exista GET /projects, el único proyecto disponible es el que devolvió el 201 al publicar.
 export function CompanyDashboard() {
   const { user } = useAuth();
-  const project = (useLocation().state as { project?: Project } | null)?.project;
+  const publishedProject = (useLocation().state as { project?: Project } | null)?.project;
+  const [result, setResult] = useState<
+    { key: string; projects: Project[]; error: null } | { key: string; projects: null; error: string } | null
+  >(null);
+  const [attempt, setAttempt] = useState(0);
+  const [notice, setNotice] = useState(0);
+  const requestKey = `${user?.id ?? ""}:${attempt}`;
+  const currentResult = result?.key === requestKey ? result : null;
+
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(0), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    listProjects(controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setResult({ key: requestKey, projects: result, error: null });
+      })
+      .catch((cause: unknown) => {
+        if (controller.signal.aborted) return;
+        console.error("No se pudieron cargar los proyectos:", cause);
+        setResult({
+          key: requestKey,
+          projects: null,
+          error: cause instanceof ApiError && cause.status === 401
+            ? "No se pudo verificar tu sesión. Cierra sesión y vuelve a iniciarla."
+            : "No se pudieron cargar tus proyectos. Inténtalo de nuevo.",
+        });
+      });
+    return () => controller.abort();
+  }, [requestKey]);
 
   return (
     <PublicLayout>
@@ -27,43 +58,27 @@ export function CompanyDashboard() {
             <p className="text-neutral-content">Sesión iniciada como {user?.email}</p>
           </header>
 
-          {project ? (
-            <section className="space-y-4 rounded-box border border-neutral bg-base-200 p-6 shadow-2xl md:p-8">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="badge badge-soft badge-success font-bold">Proyecto publicado</span>
-                <span className="badge badge-soft badge-primary badge-sm font-bold">
-                  Etapa: {labelOf(stageOptions, project.projectStage)}
-                </span>
-              </div>
-              <h2 className="text-2xl font-bold text-white">{project.title}</h2>
-              <p className="whitespace-pre-line text-sm text-neutral-content">{project.description}</p>
-              <div className="flex flex-wrap gap-1.5">
-                <span className="badge badge-soft badge-secondary badge-sm">
-                  {labelOf(verticalOptions, project.vertical)}
-                </span>
-                {project.businessSectors.map((sector) => (
-                  <span key={sector} className="badge badge-soft badge-accent badge-sm">
-                    {labelOf(sectorOptions, sector)}
-                  </span>
-                ))}
-              </div>
-              <p className="text-xs text-neutral-content">ID: {project.id}</p>
-            </section>
-          ) : (
-            <section className="rounded-box border border-neutral bg-base-200 p-8 text-center shadow-2xl">
-              <span className="material-symbols-outlined text-4xl text-secondary">folder_open</span>
-              <h2 className="mt-2 text-xl font-bold text-white">Aún no hay proyectos para mostrar</h2>
-              <p className="mt-1 text-sm text-neutral-content">
-                El listado de tus proyectos estará disponible cuando la API lo exponga.
-              </p>
-            </section>
-          )}
+          <ProjectsList
+            result={currentResult}
+            publishedProjectId={publishedProject?.id}
+            onRetry={() => setAttempt((value) => value + 1)}
+            onEditRequested={() => setNotice((value) => value + 1)}
+            canEdit={user?.role === "company"}
+          />
 
-          <Link to="/proyecto/nuevo" className="btn border-0 bg-brand-gradient text-white">
+          <Link to="/proyecto/nuevo" onClick={() => track("clicked_company_new_project", { role: user?.role ?? "unknown", location: "company_dashboard" })} className="btn border-0 bg-brand-gradient text-white">
             Subir un proyecto
             <span className="material-symbols-outlined text-[20px]">add</span>
           </Link>
         </div>
+        {notice > 0 && (
+          <div className="toast toast-end toast-bottom z-50">
+            <div role="status" className="alert border border-secondary bg-base-300 text-base-content shadow-lg">
+              <span>Solicitud de cambio enviada correctamente. El proyecto se actualizará cuando sea aprobada.</span>
+              <button type="button" className="btn btn-ghost btn-sm" aria-label="Cerrar notificación" onClick={() => setNotice(0)}>✕</button>
+            </div>
+          </div>
+        )}
       </div>
     </PublicLayout>
   );

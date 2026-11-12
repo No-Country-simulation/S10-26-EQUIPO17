@@ -2,8 +2,10 @@ import { Link } from "react-router-dom";
 import { heroTags } from "../data/landingData";
 import { LiveDashboard } from "./LiveDashboard";
 import { track } from "../../../shared/analytics/analytics";
+import { useAnalyticsRole } from "../../auth/useAnalyticsRole";
 
 export function HeroSection() {
+  const role = useAnalyticsRole();
   return (
     <section className="relative overflow-hidden py-16 lg:py-24">
       <div className="pointer-events-none absolute -top-40 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-gradient-to-b from-primary/15 via-secondary/10 to-transparent blur-[140px]" />
@@ -28,11 +30,11 @@ export function HeroSection() {
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
               to="/subir-proyecto"
-              onClick={() => track("clicked_validate_project", { location: "hero_section" })}
+              onClick={() => track("clicked_validate_project", { location: "hero_section", role })}
               className="btn btn-lg bg-brand-gradient border-0 text-white shadow-[0_0_25px_rgba(255,0,148,0.4)]">
               <span className="material-symbols-outlined">rocket_launch</span> Validar mi proyecto o idea
             </Link>
-            <a href="#public-dashboard" className="btn btn-lg border-neutral bg-base-300 hover:border-secondary">
+            <a href="#public-dashboard" onClick={() => track("clicked_public_metrics_hero", { location: "hero_section", role })} className="btn btn-lg border-neutral bg-base-300 hover:border-secondary">
               <span className="material-symbols-outlined text-secondary">sensors</span> Ver Public Dashboard en Vivo
             </a>
           </div>
