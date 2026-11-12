@@ -14,7 +14,6 @@ export type AnalyticsEvent =
   | "clicked_nav_public_metrics"
   | "clicked_share_project"
   | "clicked_institution"
-  | "clicked_upload_as_guest"
   | "clicked_create_account"
   | "viewed_wizard"
   | "completed_wizard_step"

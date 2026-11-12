@@ -25,6 +25,7 @@ export function NewProjectForm() {
       submitLabel="Publicar proyecto"
       submitIcon="rocket_launch"
       onFirstStepBack={() => navigate("/dashboard")}
+      onSkipProject={() => navigate("/dashboard", { replace: true })}
       onSubmit={handleSubmit}
     />
   );

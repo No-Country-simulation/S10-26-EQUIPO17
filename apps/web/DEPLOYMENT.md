@@ -39,9 +39,9 @@ Al abrir la aplicación, la sesión se consulta con `GET /api/auth/me`. Si respo
 ```
 
 1. **Proxy de la API:** Vercel reenvía `/api/*` a la API en la EC2. El navegador ve la API en el mismo origen que la web, así que las cookies de sesión son de primera parte: `SameSite=Lax` frena el CSRF, Safari y Firefox no las bloquean y la API no necesita CORS. En desarrollo, el `server.proxy` de `vite.config.ts` hace lo mismo contra `https://apinocountry17.duckdns.org`; con `VITE_API_PROXY_TARGET=http://127.0.0.1:3000` se apunta a una API local.
-
 El dashboard de empresa consulta `GET /api/projects` con la cookie de sesión. El cliente HTTP muestra la respuesta en la consola del navegador solo en desarrollo; si la consulta falla, el dashboard muestra un error y permite reintentar.
-2. **Catch-all de la SPA:** para solucionar el comportamiento nativo de los servidores en la nube que arrojan errores `404 NOT FOUND` al recargar páginas manualmente o acceder de forma directa a rutas profundas (por ejemplo, `/cargar-desafio`), todo lo demás se redirige al archivo central `index.html` para que **React Router** tome el control de la navegación en el cliente.
+
+2. **Catch-all de la SPA:** para solucionar el comportamiento nativo de los servidores en la nube que arrojan errores `404 NOT FOUND` al recargar páginas manualmente o acceder de forma directa a rutas profundas (por ejemplo, `/proyecto/nuevo` o `/cargar-desafio`), todo lo demás se redirige al archivo central `index.html` para que **React Router** tome el control de la navegación en el cliente.
 
 ---
 

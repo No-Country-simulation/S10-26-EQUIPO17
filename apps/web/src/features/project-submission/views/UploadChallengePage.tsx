@@ -81,22 +81,6 @@ export function UploadChallengePage() {
                   ))}
                 </ol>
               </div>
-
-              <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-neutral/60 pt-4 sm:flex-row">
-                <span className="text-xs text-neutral-content">
-                  ¿Tienes prisa? Sube los datos directamente.
-                </span>
-                <Link
-                  to="/cargar-desafio"
-                  onClick={() => track("clicked_upload_as_guest", { role })}
-                  className="btn w-full border-0 bg-brand-gradient text-white shadow-md transition-all hover:brightness-110 sm:w-auto"
-                >
-                  Subir como invitado
-                  <span aria-hidden="true" className="material-symbols-outlined text-base">
-                    arrow_forward
-                  </span>
-                </Link>
-              </div>
             </section>
 
             <section className="relative lg:col-span-5">
