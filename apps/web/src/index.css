@@ -40,6 +40,12 @@
   background-image: linear-gradient(to right, var(--color-primary), var(--color-secondary));
 }
 
+.login-validation {
+  --color-error: #f87171;
+  --color-error-content: #1b0a0a;
+  --color-success: #4ade80;
+}
+
 body {
   margin: 0;
   overscroll-behavior: none;

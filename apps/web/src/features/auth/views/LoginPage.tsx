@@ -1,21 +1,14 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { z } from "zod";
 import { PublicLayout } from "../../../shared/layouts/PublicLayout";
 import { ApiError } from "../../../shared/api/apiClient";
 import { track } from "../../../shared/analytics/analytics";
 import { FormField } from "../../project-submission/components/FormField";
 import { RequireGuest } from "../RequireGuest";
+import { loginSchema, type LoginValues } from "../loginSchema";
 import { useAuth } from "../useAuth";
-
-const loginSchema = z.object({
-  email: z.email("Ingresa un correo electrónico válido"),
-  password: z.string().min(1, "Ingresa tu contraseña"),
-});
-
-type LoginValues = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
   const { signIn } = useAuth();
@@ -24,15 +17,32 @@ export function LoginPage() {
   const redirectTo = (location.state as { from?: string } | null)?.from ?? "/dashboard";
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [completingSignIn, setCompletingSignIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    control,
+    formState: { errors, dirtyFields, touchedFields, isSubmitting, isValid },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
+    mode: "onChange",
     defaultValues: { email: "", password: "" },
   });
+
+  const email = useWatch({ control, name: "email" });
+  const password = useWatch({ control, name: "password" });
+  const emailInteracted = Boolean(dirtyFields.email || touchedFields.email || errors.email);
+  const passwordInteracted = Boolean(dirtyFields.password || touchedFields.password || errors.password);
+  const formInteracted = emailInteracted || passwordInteracted;
+  const emailValidation = loginSchema.shape.email.safeParse(email);
+  const passwordValidation = loginSchema.shape.password.safeParse(password);
+  const emailState = emailInteracted ? (emailValidation.success ? "success" : "error") : null;
+  const passwordState = passwordInteracted ? (passwordValidation.success ? "success" : "error") : null;
+  const emailError = emailState === "error" && !emailValidation.success ? emailValidation.error.issues[0]?.message : undefined;
+  const passwordError = passwordState === "error" && !passwordValidation.success ? passwordValidation.error.issues[0]?.message : undefined;
+  const fieldsetClass = (state: "error" | "success" | null) =>
+    `rounded-box border p-3 ${state === "error" ? "border-error" : state === "success" ? "border-success" : "border-transparent"}`;
 
   const onSubmit = async ({ email, password }: LoginValues) => {
     setSubmitError(null);
@@ -71,14 +81,38 @@ export function LoginPage() {
           <form
             noValidate
             onSubmit={handleSubmit(onSubmit)}
-            className="space-y-2 rounded-box border border-neutral bg-base-200 p-6 shadow-2xl md:p-8"
+            className={`login-validation space-y-2 rounded-box border bg-base-200 p-6 shadow-2xl md:p-8 ${formInteracted ? (isValid ? "border-success" : "border-error") : "border-neutral"}`}
           >
-            <FormField label="Correo electrónico" error={errors.email?.message}>
-              <input {...register("email")} type="email" autoComplete="email" className="input w-full" placeholder="nombre@empresa.com" />
+            <FormField label="Correo electrónico" error={emailError} errorId="login-email-error" className={fieldsetClass(emailState)}>
+              <input {...register("email")} type="email" autoComplete="email" required aria-label="Correo electrónico" aria-invalid={emailState === "error"} aria-describedby={emailError ? "login-email-error" : undefined} className={`input validator w-full ${emailState === "error" ? "input-error" : emailState === "success" ? "input-success" : ""}`} placeholder="nombre@empresa.com" />
             </FormField>
 
-            <FormField label="Contraseña" error={errors.password?.message}>
-              <input {...register("password")} type="password" autoComplete="current-password" className="input w-full" placeholder="••••••••" />
+            <FormField label="Contraseña" error={passwordError} errorId="login-password-error" hint="Mínimo 8 caracteres." className={fieldsetClass(passwordState)}>
+              <div className="relative">
+                <input
+                  {...register("password")}
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  minLength={8}
+                  aria-label="Contraseña"
+                  aria-invalid={passwordState === "error"}
+                  aria-describedby={passwordError ? "login-password-error" : undefined}
+                  className={`input validator w-full pr-12 ${passwordState === "error" ? "input-error" : passwordState === "success" ? "input-success" : ""}`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  className="btn btn-ghost btn-sm btn-square absolute right-1 top-1/2 -translate-y-1/2 text-neutral-content"
+                >
+                  <span aria-hidden="true" className="material-symbols-outlined">
+                    {showPassword ? "visibility_off" : "visibility"}
+                  </span>
+                </button>
+              </div>
             </FormField>
 
             {submitError && (
@@ -88,7 +122,11 @@ export function LoginPage() {
               </div>
             )}
 
-            <button type="submit" disabled={isSubmitting} className="btn mt-2 w-full border-0 bg-brand-gradient text-white">
+            <button
+              type="submit"
+              disabled={!isValid || isSubmitting}
+              className="btn mt-2 w-full border-0 bg-brand-gradient text-white disabled:bg-none disabled:bg-base-300 disabled:text-neutral-content"
+            >
               {isSubmitting && <span className="loading loading-spinner loading-sm" />}
               Iniciar sesión
             </button>
