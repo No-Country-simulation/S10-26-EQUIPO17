@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type FormEvent } from "react";
 import { ApiError } from "../../../shared/api/apiClient";
+import { track } from "../../../shared/analytics/analytics";
 import {
   labelOf,
   sectorOptions,
@@ -78,6 +79,10 @@ export function ProjectCard({
       await submitProjectEditRequest(project.id, parsed.data);
     } catch (cause: unknown) {
       console.error("No se pudo enviar la solicitud de cambio:", cause);
+      track("company_project_edit_failed", {
+        role: "company",
+        status: cause instanceof ApiError ? String(cause.status) : "network",
+      });
       setError(cause instanceof ApiError && cause.status === 401
         ? "No se pudo verificar tu sesión. Cierra sesión y vuelve a iniciarla."
         : cause instanceof ApiError && cause.status === 403
@@ -89,6 +94,7 @@ export function ProjectCard({
               : "No se pudo enviar la solicitud. Inténtalo de nuevo.");
       submittingRef.current = false;
       setSubmitting(false);
+      track("company_project_edit_submitted", { role: "company" });
       return;
     }
     submittingRef.current = false;
@@ -118,6 +124,7 @@ export function ProjectCard({
             className="card-body w-full gap-4 rounded-box p-6 text-left transition-colors hover:bg-base-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary md:p-8"
             aria-haspopup="dialog"
             popoverTarget={modalId}
+            onClick={() => track("opened_company_project", { role: canEdit ? "company" : "unknown" })}
           >
             <span className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 text-sm font-bold text-warning">
@@ -248,6 +255,7 @@ export function ProjectCard({
           <div className="modal-action">
             {canEdit && (
               <button type="button" className="btn btn-outline btn-sm" onClick={() => {
+                track("started_company_project_edit", { role: "company" });
                 setValues(projectEditValues(project));
                 setError(null);
                 setIsEditing(true);
@@ -323,7 +331,10 @@ export function ProjectCard({
               </fieldset>
               {error && <p role="alert" className="text-sm text-[#f87171]">{error}</p>}
               <div className="modal-action">
-                <button type="button" className="btn border-neutral bg-base-300" disabled={submitting} onClick={resetEditor}>Cancelar</button>
+                <button type="button" className="btn border-neutral bg-base-300" disabled={submitting} onClick={() => {
+                  track("cancelled_company_project_edit", { role: "company" });
+                  resetEditor();
+                }}>Cancelar</button>
                 <button type="submit" className="btn btn-primary" disabled={!hasChanges || !validation.success || submitting}>
                   {submitting && <span className="loading loading-spinner loading-sm" />}
                   Solicitar cambio

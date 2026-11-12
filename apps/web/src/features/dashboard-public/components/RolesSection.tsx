@@ -2,13 +2,15 @@ import { Link } from "react-router-dom";
 import { roles } from "../data/landingData";
 import { RoleMockup } from "./RoleMockups";
 import { track } from "../../../shared/analytics/analytics";
+import { useAnalyticsRole } from "../../auth/useAnalyticsRole";
 
 export function RolesSection() {
+  const role = useAnalyticsRole();
   return (
     <section className="mx-auto max-w-[1440px] space-y-8 px-6 py-16 lg:px-8">
       {roles.map((r) => {
         const ctaClass = `btn btn-lg ${r.cta.className}`;
-        const onCtaClick = () => track(r.cta.event, { location: `${r.id}_section` });
+        const onCtaClick = () => track(r.cta.event, { location: `${r.id}_section`, role });
         const ctaContent = (
           <>
             <span className="material-symbols-outlined text-[20px]">{r.cta.icon}</span>

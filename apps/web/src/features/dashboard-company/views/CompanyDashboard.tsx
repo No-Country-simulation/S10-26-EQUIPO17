@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ApiError } from "../../../shared/api/apiClient";
+import { track } from "../../../shared/analytics/analytics";
 import { PublicLayout } from "../../../shared/layouts/PublicLayout";
 import type { Project } from "../../project-submission/submissionService";
 import { useAuth } from "../../auth/useAuth";
@@ -65,7 +66,7 @@ export function CompanyDashboard() {
             canEdit={user?.role === "company"}
           />
 
-          <Link to="/proyecto/nuevo" className="btn border-0 bg-brand-gradient text-white">
+          <Link to="/proyecto/nuevo" onClick={() => track("clicked_company_new_project", { role: user?.role ?? "unknown", location: "company_dashboard" })} className="btn border-0 bg-brand-gradient text-white">
             Subir un proyecto
             <span className="material-symbols-outlined text-[20px]">add</span>
           </Link>

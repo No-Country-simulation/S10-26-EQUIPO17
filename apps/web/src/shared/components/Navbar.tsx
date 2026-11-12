@@ -23,12 +23,15 @@ export function Navbar() {
     setSignOutError(null);
     try {
       await signOut();
-      navigate("/iniciar-sesion", { replace: true });
     } catch {
+      track("logout_failed", { role: user?.role ?? "unknown" });
       setSignOutError("No se pudo cerrar sesión. Inténtalo de nuevo.");
+      return;
     } finally {
       setSigningOut(false);
     }
+    track("logout_succeeded", { role: user?.role ?? "unknown" });
+    navigate("/iniciar-sesion", { replace: true });
   };
 
   return (
@@ -52,7 +55,7 @@ export function Navbar() {
               <li key={l.href}>
                 <a
                   href={l.href}
-                  onClick={() => track(l.event, { location: "navbar" })}
+                  onClick={() => track(l.event, { location: "navbar", role: "guest" })}
                   className={`text-sm font-medium transition-colors hover:text-secondary ${l.strong ? "" : "text-neutral-content"}`}
                 >
                   {l.label}
@@ -66,12 +69,12 @@ export function Navbar() {
           {!loading && user && (
             <>
               {user.role === "company" && (
-                <Link to="/dashboard" className="text-center text-xs font-semibold leading-tight text-secondary hover:underline sm:text-sm">
+                <Link to="/dashboard" onClick={() => track("clicked_company_dashboard_nav", { role: "company", location: "navbar" })} className="text-center text-xs font-semibold leading-tight text-secondary hover:underline sm:text-sm">
                   Mis proyectos
                 </Link>
               )}
               {user.role === "admin" && (
-                <Link to="/dashboard" className="text-center text-xs font-semibold leading-tight text-secondary hover:underline sm:text-sm">
+                <Link to="/dashboard" onClick={() => track("clicked_admin_dashboard_nav", { role: "admin", location: "navbar" })} className="text-center text-xs font-semibold leading-tight text-secondary hover:underline sm:text-sm">
                   Panel de administrador
                 </Link>
               )}
@@ -104,7 +107,7 @@ export function Navbar() {
               {pathname.replace(/\/+$/, "") !== "/iniciar-sesion" && (
                 <Link
                   to="/iniciar-sesion"
-                  onClick={() => track("clicked_login", { location: "navbar" })}
+                  onClick={() => track("clicked_login", { location: "navbar", role: "guest" })}
                   className="btn btn-sm hidden border-neutral bg-base-300 sm:inline-flex"
                 >
                   Iniciar sesión
@@ -113,7 +116,7 @@ export function Navbar() {
               <Link
                 to="/subir-proyecto"
                 onClick={() =>
-                  track("clicked_upload_project", { location: "navbar" })
+                  track("clicked_upload_project", { location: "navbar", role: "guest" })
                 }
                 className="btn btn-sm bg-brand-gradient border-0 text-white shadow-[0_0_20px_rgba(255,0,148,0.35)]"
               >

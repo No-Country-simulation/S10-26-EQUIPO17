@@ -1,5 +1,10 @@
 # React + TypeScript + Vite
 
+## Analítica
+
+El [catálogo de eventos de PostHog](./ANALYTICS.md) describe clics, resultados, propiedades y
+verificación. La [guía de despliegue](./DEPLOYMENT.md) contiene la configuración de entorno.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:

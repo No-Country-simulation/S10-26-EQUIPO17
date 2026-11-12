@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError } from "../../../shared/api/apiClient";
+import { track } from "../../../shared/analytics/analytics";
 import { labelOf, sectorOptions, stageOptions, verticalOptions, type SelectOption } from "../../project-submission/challengeFormOptions";
 import { approveEditRequest, rejectEditRequest, type EditRequest } from "../editRequestService";
 
@@ -41,6 +42,7 @@ export function EditRequestCard({
   const [submitting, setSubmitting] = useState(false);
 
   function openDialog(nextDecision: "approve" | "reject") {
+    track("opened_admin_edit_review", { role: "admin", decision: nextDecision });
     setDecision(nextDecision);
     setReason("");
     setError(null);
@@ -64,6 +66,11 @@ export function EditRequestCard({
       else await rejectEditRequest(request.id, trimmedReason);
     } catch (cause: unknown) {
       console.error("No se pudo revisar la solicitud:", cause);
+      track("admin_edit_review_failed", {
+        role: "admin",
+        decision,
+        status: cause instanceof ApiError ? String(cause.status) : "network",
+      });
       setError(cause instanceof ApiError && cause.status === 401
         ? "No se pudo verificar tu sesión. Cierra sesión y vuelve a iniciarla."
         : cause instanceof ApiError && cause.status === 409
@@ -73,6 +80,7 @@ export function EditRequestCard({
       setSubmitting(false);
       return;
     }
+    track("admin_edit_review_succeeded", { role: "admin", decision });
     dialogRef.current?.close();
     onReviewed(request.id, decision);
   }

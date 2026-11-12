@@ -13,6 +13,7 @@ let AuthContext;
 let Navbar;
 let loginSchema;
 let LoginPage;
+let useAnalyticsRole;
 
 before(async () => {
   server = await createServer({ server: { middlewareMode: true, ws: false }, appType: "custom" });
@@ -21,6 +22,7 @@ before(async () => {
   ({ Navbar } = await server.ssrLoadModule("/src/shared/components/Navbar.tsx"));
   ({ loginSchema } = await server.ssrLoadModule("/src/features/auth/loginSchema.ts"));
   ({ LoginPage } = await server.ssrLoadModule("/src/features/auth/views/LoginPage.tsx"));
+  ({ useAnalyticsRole } = await server.ssrLoadModule("/src/features/auth/useAnalyticsRole.ts"));
 });
 
 after(async () => {
@@ -109,4 +111,20 @@ test("inicia con el botón deshabilitado y sin errores prematuros", () => {
   assert.match(html, /type="submit"[^>]*disabled/);
   assert.doesNotMatch(html, /Ingresa un correo electrónico válido|Ingresa tu contraseña/);
   assert.match(html, /aria-label="Mostrar contraseña"/);
+});
+
+test("identifica el rol de analítica sin incluir datos personales", () => {
+  function Role() {
+    return React.createElement("span", null, useAnalyticsRole());
+  }
+  const render = (sessionUser, loading) => renderToStaticMarkup(React.createElement(
+    AuthContext.Provider,
+    { value: { user: sessionUser, loading, signIn: async () => user, signOut: async () => {} } },
+    React.createElement(Role),
+  ));
+  assert.equal(render(user, false), "<span>company</span>");
+  assert.equal(render({ ...user, role: "admin" }, false), "<span>admin</span>");
+  assert.equal(render(null, false), "<span>guest</span>");
+  assert.equal(render({ ...user, role: null }, false), "<span>unknown</span>");
+  assert.equal(render(null, true), "<span>unknown</span>");
 });

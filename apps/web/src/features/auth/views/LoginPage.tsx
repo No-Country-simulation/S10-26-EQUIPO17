@@ -47,8 +47,9 @@ export function LoginPage() {
   const onSubmit = async ({ email, password }: LoginValues) => {
     setSubmitError(null);
     setCompletingSignIn(true);
+    let session;
     try {
-      await signIn(email, password);
+      session = await signIn(email, password);
     } catch (error) {
       setCompletingSignIn(false);
       const status = error instanceof ApiError ? String(error.status) : "network";
@@ -60,7 +61,7 @@ export function LoginPage() {
       );
       return;
     }
-    track("logged_in");
+    track("logged_in", { role: session.role ?? "unknown" });
     navigate(redirectTo, { replace: true });
   };
 
@@ -134,7 +135,7 @@ export function LoginPage() {
 
           <p className="text-center text-sm text-neutral-content">
             ¿Aún no tienes cuenta?{" "}
-            <Link to="/crear-cuenta" className="font-semibold text-secondary hover:underline">
+            <Link to="/crear-cuenta" onClick={() => track("clicked_register_from_login", { location: "login", role: "guest" })} className="font-semibold text-secondary hover:underline">
               Crear cuenta
             </Link>
           </p>
