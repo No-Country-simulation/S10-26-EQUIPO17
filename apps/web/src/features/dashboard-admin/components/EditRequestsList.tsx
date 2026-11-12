@@ -8,9 +8,11 @@ export type EditRequestsResult =
 export function EditRequestsList({
   result,
   onRetry,
+  onReviewed,
 }: {
   result: EditRequestsResult | null;
   onRetry: () => void;
+  onReviewed: (id: string, decision: "approve" | "reject") => void;
 }) {
   if (!result) {
     return (
@@ -42,7 +44,7 @@ export function EditRequestsList({
     <section aria-labelledby="edit-requests-heading" className="space-y-4">
       <h2 id="edit-requests-heading" className="text-2xl font-bold text-white">Solicitudes de modificación</h2>
       <div className="grid items-start gap-6 md:grid-cols-2">
-        {result.requests.map((request) => <EditRequestCard key={request.id} request={request} />)}
+        {result.requests.map((request) => <EditRequestCard key={request.id} request={request} onReviewed={onReviewed} />)}
       </div>
     </section>
   );

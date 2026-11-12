@@ -21,3 +21,14 @@ export async function listEditRequests(signal?: AbortSignal): Promise<EditReques
   const response = await apiClient<unknown>("/project-edit-requests", { method: "GET", signal });
   return z.array(editRequestSchema).parse(response);
 }
+
+export async function approveEditRequest(id: string): Promise<void> {
+  await apiClient<unknown>(`/project-edit-requests/${encodeURIComponent(id)}/approve`, { method: "POST" });
+}
+
+export async function rejectEditRequest(id: string, reason: string): Promise<void> {
+  await apiClient<unknown>(`/project-edit-requests/${encodeURIComponent(id)}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}

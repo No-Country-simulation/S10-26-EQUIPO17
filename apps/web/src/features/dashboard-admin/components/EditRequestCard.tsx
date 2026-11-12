@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { ApiError } from "../../../shared/api/apiClient";
 import { labelOf, sectorOptions, stageOptions, verticalOptions, type SelectOption } from "../../project-submission/challengeFormOptions";
-import type { EditRequest } from "../editRequestService";
+import { approveEditRequest, rejectEditRequest, type EditRequest } from "../editRequestService";
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -22,10 +23,62 @@ function OptionBadge({ options, value }: { options: SelectOption[]; value: strin
   );
 }
 
-export function EditRequestCard({ request }: { request: EditRequest }) {
+export function EditRequestCard({
+  request,
+  onReviewed,
+}: {
+  request: EditRequest;
+  onReviewed: (id: string, decision: "approve" | "reject") => void;
+}) {
   const project = request.proposedProject;
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const submittingRef = useRef(false);
+  const headingId = useId();
+  const reasonId = useId();
+  const [decision, setDecision] = useState<"approve" | "reject">("approve");
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  function openDialog(nextDecision: "approve" | "reject") {
+    setDecision(nextDecision);
+    setReason("");
+    setError(null);
+    dialogRef.current?.showModal();
+  }
+
+  async function handleReview(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submittingRef.current) return;
+    const trimmedReason = reason.trim();
+    if (decision === "reject" && !trimmedReason) {
+      setError("Ingresa la razón del rechazo.");
+      return;
+    }
+
+    submittingRef.current = true;
+    setSubmitting(true);
+    setError(null);
+    try {
+      if (decision === "approve") await approveEditRequest(request.id);
+      else await rejectEditRequest(request.id, trimmedReason);
+    } catch (cause: unknown) {
+      console.error("No se pudo revisar la solicitud:", cause);
+      setError(cause instanceof ApiError && cause.status === 401
+        ? "No se pudo verificar tu sesión. Cierra sesión y vuelve a iniciarla."
+        : cause instanceof ApiError && cause.status === 409
+          ? "La solicitud ya fue revisada o cambió. Actualiza la página para consultar su estado."
+          : "No se pudo actualizar la solicitud. Inténtalo de nuevo.");
+      submittingRef.current = false;
+      setSubmitting(false);
+      return;
+    }
+    dialogRef.current?.close();
+    onReviewed(request.id, decision);
+  }
 
   return (
+    <>
     <article className="card h-full rounded-box border border-neutral bg-base-200 shadow-2xl">
       <div className="card-body gap-5 p-6 md:p-8">
         <div>
@@ -67,7 +120,58 @@ export function EditRequestCard({ request }: { request: EditRequest }) {
           </Detail>
           <Detail label="Etapa actual del proyecto"><OptionBadge options={stageOptions} value={project.projectStage} /></Detail>
         </dl>
+        {request.status === "pending" && (
+          <div className="card-actions mt-2 flex-wrap">
+            <button type="button" className="btn border-0 bg-brand-gradient text-white" onClick={() => openDialog("approve")}>
+              Aceptar
+            </button>
+            <button type="button" className="btn border-neutral bg-base-300" onClick={() => openDialog("reject")}>
+              Rechazar
+            </button>
+          </div>
+        )}
       </div>
     </article>
+    <dialog
+      ref={dialogRef}
+      className="modal"
+      aria-labelledby={headingId}
+      onCancel={(event) => {
+        if (submittingRef.current) event.preventDefault();
+      }}
+    >
+      <div className="modal-box border border-neutral bg-base-200">
+        <h3 id={headingId} className="text-xl font-bold text-white">
+          {decision === "approve" ? "¿Quieres aceptar este cambio en el proyecto?" : "¿Quieres rechazar el cambio del proyecto?"}
+        </h3>
+        <form onSubmit={(event) => void handleReview(event)}>
+          {decision === "reject" && (
+            <fieldset className="fieldset mt-4">
+              <legend className="fieldset-legend text-sm font-semibold text-white">Razón</legend>
+              <textarea
+                id={reasonId}
+                aria-label="Razón"
+                className="textarea w-full"
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                required
+                disabled={submitting}
+              />
+            </fieldset>
+          )}
+          {error && <p role="alert" className="mt-4 text-sm text-[#f87171]">{error}</p>}
+          <div className="modal-action">
+            <button type="button" className="btn border-neutral bg-base-300" disabled={submitting} onClick={() => dialogRef.current?.close()}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn border-0 bg-brand-gradient text-white" disabled={submitting}>
+              {submitting && <span className="loading loading-spinner loading-sm" />}
+              {decision === "approve" ? "Aceptar" : "Rechazar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+    </>
   );
 }

@@ -9,8 +9,29 @@ export function AdminDashboard() {
   const { user } = useAuth();
   const [result, setResult] = useState<{ key: string; value: EditRequestsResult } | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [notice, setNotice] = useState<{ message: string; key: number } | null>(null);
   const requestKey = `${user?.id ?? ""}:${attempt}`;
   const currentResult = result?.key === requestKey ? result.value : null;
+
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(null), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+
+  function handleReviewed(id: string, decision: "approve" | "reject") {
+    setResult((previous) => {
+      if (!previous || previous.key !== requestKey || previous.value.error !== null) return previous;
+      return {
+        ...previous,
+        value: { requests: previous.value.requests.filter((request) => request.id !== id), error: null },
+      };
+    });
+    setNotice((previous) => ({
+      message: decision === "approve" ? "Estado actualizado a Aceptado" : "Estado actualizado a Rechazado",
+      key: (previous?.key ?? 0) + 1,
+    }));
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -45,9 +66,17 @@ export function AdminDashboard() {
             </h1>
             <p className="text-neutral-content">Sesión iniciada como {user?.email}</p>
           </header>
-          <EditRequestsList result={currentResult} onRetry={() => setAttempt((value) => value + 1)} />
+          <EditRequestsList result={currentResult} onRetry={() => setAttempt((value) => value + 1)} onReviewed={handleReviewed} />
         </div>
       </div>
+      {notice && (
+        <div className="toast toast-end toast-bottom z-50">
+          <div role="status" className="alert border border-secondary bg-base-300 text-base-content shadow-lg">
+            <span>{notice.message}</span>
+            <button type="button" className="btn btn-ghost btn-sm" aria-label="Cerrar notificación" onClick={() => setNotice(null)}>✕</button>
+          </div>
+        </div>
+      )}
     </PublicLayout>
   );
 }

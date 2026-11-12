@@ -29,6 +29,8 @@ const request = {
 const originalFetch = globalThis.fetch;
 let server;
 let listEditRequests;
+let approveEditRequest;
+let rejectEditRequest;
 let EditRequestCard;
 let EditRequestsList;
 let Dashboard;
@@ -36,7 +38,7 @@ let AuthContext;
 
 before(async () => {
   server = await createServer({ server: { middlewareMode: true, ws: false }, appType: "custom" });
-  ({ listEditRequests } = await server.ssrLoadModule("/src/features/dashboard-admin/editRequestService.ts"));
+  ({ listEditRequests, approveEditRequest, rejectEditRequest } = await server.ssrLoadModule("/src/features/dashboard-admin/editRequestService.ts"));
   ({ EditRequestCard } = await server.ssrLoadModule("/src/features/dashboard-admin/components/EditRequestCard.tsx"));
   ({ EditRequestsList } = await server.ssrLoadModule("/src/features/dashboard-admin/components/EditRequestsList.tsx"));
   ({ Dashboard } = await server.ssrLoadModule("/src/features/auth/views/Dashboard.tsx"));
@@ -70,6 +72,26 @@ test("solicita modificaciones sin body y valida la respuesta", async () => {
   await assert.rejects(listEditRequests(), { status: 403 });
 });
 
+test("envía las decisiones con el identificador de solicitud y propaga errores", async () => {
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, options });
+    return Response.json(request);
+  };
+  await approveEditRequest("request/1");
+  await rejectEditRequest("request/2", "No va acorde a las tecnologías");
+  assert.equal(calls[0].url, "/api/project-edit-requests/request%2F1/approve");
+  assert.equal(calls[0].options.method, "POST");
+  assert.equal(calls[0].options.body, undefined);
+  assert.equal(calls[1].url, "/api/project-edit-requests/request%2F2/reject");
+  assert.equal(calls[1].options.method, "POST");
+  assert.deepEqual(JSON.parse(calls[1].options.body), { reason: "No va acorde a las tecnologías" });
+  assert.notEqual(calls[1].options.credentials, "omit");
+  globalThis.fetch = async () => Response.json({ error: "Ya fue revisada" }, { status: 409 });
+  await assert.rejects(approveEditRequest("request-1"), { status: 409 });
+  await assert.rejects(rejectEditRequest("request-1", "Motivo"), { status: 409 });
+});
+
 test("muestra todos los datos de la solicitud y proyecto con etiquetas en español", () => {
   const html = renderToStaticMarkup(React.createElement(EditRequestCard, { request }));
   for (const text of [
@@ -85,6 +107,11 @@ test("muestra todos los datos de la solicitud y proyecto con etiquetas en españ
   }));
   for (const text of ["rejected", "admin-1", "2026-11-12", "Faltan datos"]) assert.ok(reviewed.includes(text));
   assert.doesNotMatch(reviewed, /Pendiente \(pending\)/);
+  const reviewedCard = reviewed.slice(0, reviewed.indexOf("</article>"));
+  const pendingCard = html.slice(0, html.indexOf("</article>"));
+  assert.doesNotMatch(reviewedCard, />Aceptar<\/button>|>Rechazar<\/button>/);
+  assert.match(pendingCard, />Aceptar<\/button>/);
+  assert.match(pendingCard, />Rechazar<\/button>/);
 });
 
 test("distingue carga, error, vacío y lista de solicitudes", () => {
