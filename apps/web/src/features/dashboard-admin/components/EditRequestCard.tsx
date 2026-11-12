@@ -7,8 +7,12 @@ import { approveEditRequest, rejectEditRequest, type EditRequest } from "../edit
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="mb-1 text-sm font-semibold text-neutral-content">{label}</dt>
-      <dd className="break-words whitespace-pre-line text-sm text-base-content">{children}</dd>
+      <dt className="mb-1 text-sm font-semibold text-neutral-content">
+        {label}
+      </dt>
+      <dd className="wrap-break-word whitespace-pre-line text-sm text-base-content">
+        {children}
+      </dd>
     </div>
   );
 }
@@ -163,7 +167,7 @@ export function EditRequestCard({
             <span className="badge badge-soft badge-neutral">{request.status}</span>
           )}
         </div>
-        <h3 className="card-title break-words text-2xl font-bold text-gradient">{project.title}</h3>
+        <h3 className="card-title wrap-break-word text-2xl font-bold text-gradient">{project.title}</h3>
         <details className="collapse collapse-arrow border border-neutral bg-base-300">
           <summary className="collapse-title font-semibold">Detalles técnicos e IDs</summary>
           <div className="collapse-content grid grid-cols-1 gap-4 md:grid-cols-2">

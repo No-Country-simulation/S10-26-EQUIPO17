@@ -22,6 +22,7 @@ let projectEditSchema;
 let hasProjectChanges;
 let projectEditValues;
 let ProjectCard;
+let ProjectEditForm;
 let ProjectsList;
 let NewProjectForm;
 let RegisterCompanyForm;
@@ -33,6 +34,7 @@ before(async () => {
   ({ listProjects, submitProjectEditRequest } = await server.ssrLoadModule("/src/features/dashboard-company/projectService.ts"));
   ({ projectEditSchema, hasProjectChanges, projectEditValues } = await server.ssrLoadModule("/src/features/dashboard-company/projectEditSchema.ts"));
   ({ ProjectCard } = await server.ssrLoadModule("/src/features/dashboard-company/components/ProjectCard.tsx"));
+  ({ ProjectEditForm } = await server.ssrLoadModule("/src/features/dashboard-company/components/ProjectEditForm.tsx"));
   ({ ProjectsList } = await server.ssrLoadModule("/src/features/dashboard-company/components/ProjectsList.tsx"));
   ({ NewProjectForm } = await server.ssrLoadModule("/src/features/project-submission/views/NewProjectForm.tsx"));
   ({ RegisterCompanyForm } = await server.ssrLoadModule("/src/features/project-submission/views/RegisterCompanyForm.tsx"));
@@ -112,6 +114,28 @@ test("envía la solicitud al proyecto correcto con los cinco campos y propaga er
   assert.notEqual(call.options.credentials, "omit");
   globalThis.fetch = async () => Response.json({ error: "Solicitud pendiente" }, { status: 409 });
   await assert.rejects(submitProjectEditRequest(project.id, values), { status: 409 });
+});
+
+test("el formulario de edición respeta cambios, validaciones y estado de envío", () => {
+  const render = (values, submitting = false) => {
+    const validation = projectEditSchema.safeParse(values);
+    const editor = {
+      values, validation, submitting,
+      setValues: () => {}, resetEditor: () => {}, handleSubmit: () => {},
+      error: null, hasChanges: hasProjectChanges(values, project),
+      fieldError: (name) => validation.success ? undefined : validation.error.issues.find((issue) => issue.path[0] === name)?.message,
+    };
+    return renderToStaticMarkup(React.createElement(ProjectEditForm, { editor }));
+  };
+  const original = projectEditValues(project);
+  const button = (html) => html.match(/<button type="submit"[^>]*>/)?.[0];
+  assert.match(button(render(original)), /disabled/);
+  const invalid = render({ ...original, title: "" });
+  assert.match(invalid, /Ingresa un título\./);
+  assert.match(button(invalid), /disabled/);
+  const changed = { ...original, title: "Título actualizado" };
+  assert.doesNotMatch(button(render(changed)), /disabled/);
+  assert.match(button(render(changed, true)), /disabled/);
 });
 
 test("muestra el detalle con iconos del formulario y oculta los identificadores", () => {
