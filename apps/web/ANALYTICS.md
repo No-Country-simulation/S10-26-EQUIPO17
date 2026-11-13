@@ -12,16 +12,18 @@ eventos explícitos de este catálogo, PostHog puede generar eventos automático
 ## Eventos de navegación y clic
 
 Un evento de clic indica una interacción, no que la navegación o la operación posterior haya terminado.
+Los enlaces públicos del menú desplegable también están disponibles con sesión iniciada;
+en ese caso los eventos del navbar incluyen el rol de la sesión.
 
 | Evento | Ubicación y acción | Propiedades explícitas |
 | --- | --- | --- |
 | `clicked_login` | Navbar: Iniciar sesión. | `location=navbar`, `role=guest` |
 | `clicked_upload_project` | Navbar: Subir Proyecto. | `location=navbar`, `role=guest` |
-| `clicked_nav_institutions` | Navbar: Para centros de estudio. | `location=navbar`, `role=guest` |
-| `clicked_nav_companies` | Navbar: Para Empresas. | `location=navbar`, `role=guest` |
-| `clicked_nav_talent` | Navbar: Para profesionales emergentes. | `location=navbar`, `role=guest` |
-| `clicked_nav_how_it_works` | Navbar: Cómo funciona. | `location=navbar`, `role=guest` |
-| `clicked_nav_public_metrics` | Navbar: Métricas públicas en vivo. | `location=navbar`, `role=guest` |
+| `clicked_nav_institutions` | Navbar: Para centros de estudio. | `location=navbar`, `role` |
+| `clicked_nav_companies` | Navbar: Para Empresas. | `location=navbar`, `role` |
+| `clicked_nav_talent` | Navbar: Para profesionales emergentes. | `location=navbar`, `role` |
+| `clicked_nav_how_it_works` | Navbar: Cómo funciona. | `location=navbar`, `role` |
+| `clicked_nav_public_metrics` | Navbar: Métricas públicas en vivo. | `location=navbar`, `role` |
 | `clicked_company_dashboard_nav` | Navbar: Mis proyectos. | `location=navbar`, `role=company` |
 | `clicked_admin_dashboard_nav` | Navbar: Panel de administrador. | `location=navbar`, `role=admin` |
 | `clicked_validate_project` | Inicio, sección principal: Validar mi proyecto o idea. | `location=hero_section`, `role` |

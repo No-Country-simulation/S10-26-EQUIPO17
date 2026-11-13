@@ -89,9 +89,11 @@ test("muestra la identidad solo con sesión y conserva cerrar sesión", () => {
   assert.doesNotMatch(guest, /Sesión actual/);
   assert.match(guest, /Para centros de estudio/);
   assert.match(guest, /Métricas públicas en vivo/);
-  for (const html of [company, admin, noRole, render(user, true)]) {
-    assert.doesNotMatch(html, /Para centros de estudio|Para Empresas|Para profesionales emergentes|Cómo funciona|Métricas públicas en vivo/);
+  for (const html of [company, admin, noRole]) {
+    assert.match(html, /Para centros de estudio/);
+    assert.match(html, /aria-label="Menú de navegación"[^>]*aria-expanded="false"/);
   }
+  assert.doesNotMatch(render(user, true), /Para centros de estudio|Para Empresas|Para profesionales emergentes|Cómo funciona|Métricas públicas en vivo/);
   assert.doesNotMatch(render(user, true), /Sesión actual/);
 });
 
