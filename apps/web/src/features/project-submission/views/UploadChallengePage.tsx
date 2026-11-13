@@ -45,26 +45,35 @@ export function UploadChallengePage() {
   return (
     <PublicLayout>
       <div className="relative min-h-screen overflow-hidden bg-base-100 px-4 pb-16 pt-4 text-base-content lg:px-6">
-        <div className="pointer-events-none absolute left-1/2 top-0 h-96 w-[min(100%,56rem)] -translate-x-1/2 rounded-full bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10 blur-[120px]" />
+        <div className="pointer-events-none absolute left-1/2 top-0 h-96 w-[min(100%,56rem)] -translate-x-1/2 rounded-full bg-linear-to-r from-primary/10 via-accent/10 to-secondary/10 blur-[120px]" />
         <div className="relative mx-auto max-w-7xl space-y-8 py-0.5">
           <header className="space-y-4 text-center">
             <h1 className="text-[2.2rem] font-bold leading-tight text-white">
               Publica tu desafío
             </h1>
             <p className="mx-auto max-w-2xl text-base text-neutral-content md:text-lg">
-              Conecta con talento calificado mediante simulaciones de trabajo real.
+              Conecta con talento calificado mediante simulaciones de trabajo
+              real.
             </p>
 
             <div className="mt-3 flex flex-wrap justify-center gap-2.5">
               <Badge variant="duration" icon="schedule" text="5 semanas" />
               <Badge variant="remote" icon="groups" text="100 % remoto" />
-              <Badge variant="start" icon="calendar_month" text="Inicio: 7 de diciembre" />
-              <Badge variant="deadline" icon="info" text="13 días para publicar" />
+              <Badge
+                variant="start"
+                icon="calendar_month"
+                text="Inicio: 7 de diciembre"
+              />
+              <Badge
+                variant="deadline"
+                icon="info"
+                text="13 días para publicar"
+              />
             </div>
           </header>
 
           <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-12">
-            <section className="flex flex-col justify-between rounded-xl border border-neutral bg-gradient-to-br from-base-200/90 to-base-200/60 p-6 shadow-2xl backdrop-blur-sm md:p-8 lg:col-span-7">
+            <section className="flex flex-col justify-between rounded-xl border border-neutral bg-linear-to-br from-base-200/90 to-base-200/60 p-6 shadow-2xl backdrop-blur-sm md:p-8 lg:col-span-7">
               <div>
                 <h2 className="mb-6 text-2xl font-semibold text-white">
                   Cómo funciona
@@ -84,12 +93,16 @@ export function UploadChallengePage() {
             </section>
 
             <section className="relative lg:col-span-5">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-accent/20 to-secondary/10 opacity-70 blur-sm" />
+              <div className="absolute inset-0 rounded-xl bg-linear-to-b from-accent/20 to-secondary/10 opacity-70 blur-sm" />
               <div className="relative flex h-full flex-col justify-between rounded-xl border border-accent/30 bg-base-200/90 p-6 shadow-2xl backdrop-blur-xl md:p-8">
                 <div>
                   <div className="mb-6 space-y-1">
-                    <h2 className="text-xl font-bold text-white">Prueba gratuita</h2>
-                    <div className="text-4xl font-bold text-indigo-300">Gratis</div>
+                    <h2 className="text-xl font-bold text-white">
+                      Prueba gratuita
+                    </h2>
+                    <div className="text-4xl font-bold text-indigo-300">
+                      Gratis
+                    </div>
                   </div>
 
                   <p className="mb-6 text-sm text-indigo-200">
@@ -107,7 +120,7 @@ export function UploadChallengePage() {
                   <Link
                     to="/crear-cuenta"
                     onClick={() => track("clicked_create_account", { role })}
-                    className="btn w-full border-0 bg-gradient-to-r from-accent to-secondary text-sm text-white transition-all hover:brightness-110"
+                    className="btn w-full border-0 bg-linear-to-r from-accent to-secondary text-sm text-white transition-all hover:brightness-110"
                   >
                     Crear cuenta y comenzar
                   </Link>

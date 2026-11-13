@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError } from "../../../shared/api/apiClient";
 import { track } from "../../../shared/analytics/analytics";
 import { labelOf, sectorOptions, stageOptions, verticalOptions, type SelectOption } from "../../project-submission/challengeFormOptions";
@@ -7,8 +7,75 @@ import { approveEditRequest, rejectEditRequest, type EditRequest } from "../edit
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="mb-1 text-sm font-semibold text-neutral-content">{label}</dt>
-      <dd className="break-words whitespace-pre-line text-sm text-base-content">{children}</dd>
+      <dt className="mb-1 text-sm font-semibold text-neutral-content">
+        {label}
+      </dt>
+      <dd className="wrap-break-word whitespace-pre-line text-sm text-base-content">
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+const dateFormatter = new Intl.DateTimeFormat("es-ES", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "UTC",
+});
+
+function FormattedDate({ value }: { value: string }) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return <>Fecha inválida: {value}</>;
+  return <time dateTime={value}>{dateFormatter.format(date)} UTC</time>;
+}
+
+function Identifier({ label, value }: { label: string; value: string }) {
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (timerRef.current !== null) clearTimeout(timerRef.current);
+  }, []);
+
+  async function copyIdentifier() {
+    if (timerRef.current !== null) clearTimeout(timerRef.current);
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Portapapeles no disponible");
+      await navigator.clipboard.writeText(value);
+      setCopyState("copied");
+      timerRef.current = setTimeout(() => setCopyState("idle"), 2000);
+    } catch (cause: unknown) {
+      console.error("No se pudo copiar el identificador:", cause);
+      setCopyState("error");
+    }
+  }
+
+  return (
+    <div className="min-w-0">
+      <div className="text-sm font-semibold text-neutral-content">{label}</div>
+      <div className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate text-sm" title={value}>{value}</span>
+        <div className="tooltip tooltip-left" data-tip={copyState === "copied" ? "¡Copiado!" : "Copiar"}>
+          <button
+            type="button"
+            className="btn btn-ghost btn-square btn-sm"
+            aria-label={`Copiar ${label.toLowerCase()}`}
+            onClick={() => void copyIdentifier()}
+          >
+            <span className={`swap swap-rotate ${copyState === "copied" ? "swap-active" : ""}`} aria-hidden="true">
+              <span className="swap-off material-symbols-outlined">content_copy</span>
+              <span className="swap-on material-symbols-outlined">check</span>
+            </span>
+          </button>
+        </div>
+      </div>
+      <p className="text-sm" role="status" aria-live="polite">
+        {copyState === "copied" ? "¡Copiado!" : copyState === "error" ? "No se pudo copiar. Inténtalo de nuevo." : ""}
+      </p>
     </div>
   );
 }
@@ -100,25 +167,25 @@ export function EditRequestCard({
             <span className="badge badge-soft badge-neutral">{request.status}</span>
           )}
         </div>
-        <h3 className="card-title break-words text-2xl font-bold text-gradient">{project.title}</h3>
+        <h3 className="card-title wrap-break-word text-2xl font-bold text-gradient">{project.title}</h3>
+        <details className="collapse collapse-arrow border border-neutral bg-base-300">
+          <summary className="collapse-title font-semibold">Detalles técnicos e IDs</summary>
+          <div className="collapse-content grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Identifier label="Identificador de Solicitud" value={request.id} />
+            <Identifier label="Identificador del proyecto" value={request.projectId} />
+            <Identifier label="Identificador de la empresa" value={request.companyId} />
+            <Identifier label="Solicitado por (identificador de usuario)" value={request.requestedByUserId} />
+            {project.id !== request.projectId && <Identifier label="Identificador del proyecto propuesto" value={project.id} />}
+            {project.companyId !== request.companyId && <Identifier label="Identificador de la empresa del proyecto" value={project.companyId} />}
+          </div>
+        </details>
         <dl className="space-y-4">
-          <Detail label="Identificador de la solicitud">{request.id}</Detail>
-          <Detail label="Identificador del proyecto">{request.projectId}</Detail>
-          <Detail label="Identificador de la empresa">{request.companyId}</Detail>
-          <Detail label="Solicitado por (identificador de usuario)">{request.requestedByUserId}</Detail>
-          <Detail label="Fecha de creación">{request.createdAt}</Detail>
-          <Detail label="Revisado por (identificador de usuario)">{request.reviewedByUserId ?? "Sin revisar"}</Detail>
-          <Detail label="Fecha de revisión">{request.reviewedAt ?? "Sin revisar"}</Detail>
-          <Detail label="Motivo de rechazo">{request.rejectionReason ?? "Sin motivo de rechazo"}</Detail>
-        </dl>
-        <div className="divider my-0" />
-        <h4 className="text-lg font-bold text-white">Proyecto propuesto</h4>
-        <dl className="space-y-4">
-          <Detail label="Identificador del proyecto propuesto">{project.id}</Detail>
-          <Detail label="Identificador de la empresa del proyecto">{project.companyId}</Detail>
-          <Detail label="Título">{project.title}</Detail>
           <Detail label="Descripción">{project.description}</Detail>
+        </dl>
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <Detail label="Fecha de creación"><FormattedDate value={request.createdAt} /></Detail>
           <Detail label="Vertical de la solución"><OptionBadge options={verticalOptions} value={project.vertical} /></Detail>
+          <Detail label="Etapa actual del proyecto"><OptionBadge options={stageOptions} value={project.projectStage} /></Detail>
           <Detail label="Sectores involucrados">
             {project.businessSectors.length > 0
               ? <span className="flex flex-wrap gap-2">{project.businessSectors.map((sector, index) => (
@@ -126,7 +193,9 @@ export function EditRequestCard({
                 ))}</span>
               : "Sin sectores"}
           </Detail>
-          <Detail label="Etapa actual del proyecto"><OptionBadge options={stageOptions} value={project.projectStage} /></Detail>
+          {request.reviewedByUserId !== null && <Detail label="Revisado por (identificador de usuario)">{request.reviewedByUserId}</Detail>}
+          {request.reviewedAt !== null && <Detail label="Fecha de revisión"><FormattedDate value={request.reviewedAt} /></Detail>}
+          {request.rejectionReason !== null && <Detail label="Motivo de rechazo">{request.rejectionReason}</Detail>}
         </dl>
         {request.status === "pending" && (
           <div className="card-actions mt-2 flex-wrap">

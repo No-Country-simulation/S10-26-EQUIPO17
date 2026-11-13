@@ -1,28 +1,28 @@
 import { useFormContext } from "react-hook-form";
 import type { ChallengeFormValues } from "../challengeFormSchema";
-import { FormField } from "./FormField";
+import { RegistrationField } from "./RegistrationField";
 
 export function ProfileStep() {
-  const { register, formState: { errors } } = useFormContext<ChallengeFormValues>();
+  const { register } = useFormContext<ChallengeFormValues>();
 
   return (
     <div className="grid gap-x-4 gap-y-2 md:grid-cols-2">
-      <FormField label="Nombre" error={errors.firstName?.message}>
-        <input {...register("firstName")} type="text" autoComplete="given-name" className="input w-full" placeholder="Ej. Valentina" />
-      </FormField>
+      <RegistrationField name="firstName" label="Nombre">
+        {(accessibility) => <input {...register("firstName")} {...accessibility} aria-label="Nombre" type="text" autoComplete="given-name" required className="input validator w-full" placeholder="Ej. Valentina" />}
+      </RegistrationField>
 
-      <FormField label="Apellido" error={errors.lastName?.message}>
-        <input {...register("lastName")} type="text" autoComplete="family-name" className="input w-full" placeholder="Ej. Rossi" />
-      </FormField>
+      <RegistrationField name="lastName" label="Apellido">
+        {(accessibility) => <input {...register("lastName")} {...accessibility} aria-label="Apellido" type="text" autoComplete="family-name" required className="input validator w-full" placeholder="Ej. Rossi" />}
+      </RegistrationField>
 
-      <FormField
+      <RegistrationField
+        name="jobPosition"
         label="Puesto de trabajo / cargo"
-        error={errors.jobPosition?.message}
         hint="Tu rol en relación al requerimiento."
         className="md:col-span-2"
       >
-        <input {...register("jobPosition")} type="text" autoComplete="organization-title" className="input w-full" placeholder="Ej. Product Lead" />
-      </FormField>
+        {(accessibility) => <input {...register("jobPosition")} {...accessibility} aria-label="Puesto de trabajo / cargo" type="text" autoComplete="organization-title" required className="input validator w-full" placeholder="Ej. Product Lead" />}
+      </RegistrationField>
     </div>
   );
 }

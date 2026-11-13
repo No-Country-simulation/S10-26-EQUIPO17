@@ -92,20 +92,42 @@ test("envía las decisiones con el identificador de solicitud y propaga errores"
   await assert.rejects(rejectEditRequest("request-1", "Motivo"), { status: 409 });
 });
 
-test("muestra todos los datos de la solicitud y proyecto con etiquetas en español", () => {
+test("agrupa los identificadores únicos y muestra los metadatos de forma compacta", () => {
   const html = renderToStaticMarkup(React.createElement(EditRequestCard, { request }));
   for (const text of [
-    "Identificador de la solicitud", "request-1", "Identificador del proyecto", "project-1",
+    "Identificador de Solicitud", "request-1", "Identificador del proyecto", "project-1",
     "Identificador de la empresa", "company-1", "Solicitado por", "user-1", "Estado",
-    "Pendiente (pending)", "status-warning", "2026-11-12T00:34:43.477Z", "Sin revisar",
-    "Sin motivo de rechazo", "Proyecto propuesto", "Plataforma fintech", "Gestión de tareas",
+    "Pendiente (pending)", "status-warning", "12 nov 2026, 00:34 UTC",
+    "Detalles técnicos e IDs", "Plataforma fintech", "Gestión de tareas",
     "E-commerce", "Producto (Product)", "IT &amp; Cloud Ops (IT)", "MVP", "inventory_2", "cloud",
   ]) assert.ok(html.includes(text), `Falta ${text}`);
+  for (const text of ["Revisado por", "Fecha de revisión", "Motivo de rechazo", "Sin revisar", "Sin motivo de rechazo"]) {
+    assert.ok(!html.includes(text), `No debería mostrarse ${text}`);
+  }
+  assert.equal((html.match(/<details class="collapse /g) ?? []).length, 1);
+  assert.equal((html.match(/aria-label="Copiar /g) ?? []).length, 4);
+  assert.equal((html.match(/class="swap swap-rotate /g) ?? []).length, 4);
+  assert.match(html, /grid-cols-1 gap-4 md:grid-cols-2/);
+  assert.match(html, /grid-cols-2 gap-4 sm:grid-cols-3/);
+  assert.doesNotMatch(html, />Título<\/dt>/);
+  assert.equal((html.match(/Plataforma fintech/g) ?? []).length, 1);
+
+  const differentIds = renderToStaticMarkup(React.createElement(EditRequestCard, {
+    request: { ...request, proposedProject: { ...request.proposedProject, id: "otro-proyecto", companyId: "otra-empresa" } },
+  }));
+  assert.match(differentIds, /otro-proyecto/);
+  assert.match(differentIds, /otra-empresa/);
+  assert.equal((differentIds.match(/aria-label="Copiar /g) ?? []).length, 6);
+
+  const invalidDate = renderToStaticMarkup(React.createElement(EditRequestCard, {
+    request: { ...request, createdAt: "fecha inválida" },
+  }));
+  assert.match(invalidDate, /Fecha inválida: fecha inválida/);
 
   const reviewed = renderToStaticMarkup(React.createElement(EditRequestCard, {
     request: { ...request, status: "rejected", reviewedByUserId: "admin-1", reviewedAt: "2026-11-12", rejectionReason: "Faltan datos" },
   }));
-  for (const text of ["rejected", "admin-1", "2026-11-12", "Faltan datos"]) assert.ok(reviewed.includes(text));
+  for (const text of ["rejected", "admin-1", "12 nov 2026, 00:00 UTC", "Faltan datos"]) assert.ok(reviewed.includes(text));
   assert.doesNotMatch(reviewed, /Pendiente \(pending\)/);
   const reviewedCard = reviewed.slice(0, reviewed.indexOf("</article>"));
   const pendingCard = html.slice(0, html.indexOf("</article>"));

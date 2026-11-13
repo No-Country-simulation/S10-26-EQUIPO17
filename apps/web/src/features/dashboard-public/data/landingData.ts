@@ -1,3 +1,5 @@
+export const talentLoginUrl = "https://talent.nocountry.tech/login";
+
 export const metrics = [
   { label: "Equipos Colaborando", value: "142", hint: "Frontend, Backend, UX/UI, QA, PM", icon: "groups", delta: "+18% por generación", tone: "text-secondary", gradient: false },
   { label: "Horas de Simulación", value: "18,450 hrs", hint: "Ejecución continua en squads ágiles", icon: "timer", delta: "", tone: "text-primary", gradient: true },
@@ -111,7 +113,7 @@ export const roles: Role[] = [
     cta: {
       icon: "calendar_month",
       label: "Agendar Demo Institucional",
-      href: "#",
+      href: "https://wa.me/5491173591034",
       className: "border-neutral bg-base-300 hover:border-secondary hover:text-white",
       event: "clicked_schedule_demo",
     },
@@ -133,7 +135,7 @@ export const roles: Role[] = [
     cta: {
       icon: "how_to_reg",
       label: "Postular a la próxima generación (Gratis)",
-      href: "#",
+      href: talentLoginUrl,
       className: "bg-brand-gradient border-0 text-white shadow-[0_0_20px_rgba(255,0,148,0.4)]",
       event: "clicked_apply_next_generation",
     },

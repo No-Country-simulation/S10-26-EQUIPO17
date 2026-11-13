@@ -14,6 +14,8 @@ let Navbar;
 let loginSchema;
 let LoginPage;
 let useAnalyticsRole;
+let RegisterCompanyForm;
+let challengeSchema;
 
 before(async () => {
   server = await createServer({ server: { middlewareMode: true, ws: false }, appType: "custom" });
@@ -23,6 +25,8 @@ before(async () => {
   ({ loginSchema } = await server.ssrLoadModule("/src/features/auth/loginSchema.ts"));
   ({ LoginPage } = await server.ssrLoadModule("/src/features/auth/views/LoginPage.tsx"));
   ({ useAnalyticsRole } = await server.ssrLoadModule("/src/features/auth/useAnalyticsRole.ts"));
+  ({ RegisterCompanyForm } = await server.ssrLoadModule("/src/features/project-submission/views/RegisterCompanyForm.tsx"));
+  ({ challengeSchema } = await server.ssrLoadModule("/src/features/project-submission/challengeFormSchema.ts"));
 });
 
 after(async () => {
@@ -127,4 +131,22 @@ test("identifica el rol de analítica sin incluir datos personales", () => {
   assert.equal(render(null, false), "<span>guest</span>");
   assert.equal(render({ ...user, role: null }, false), "<span>unknown</span>");
   assert.equal(render(null, true), "<span>unknown</span>");
+});
+
+test("el registro conserva los mensajes de Zod y oculta inicialmente la contraseña", () => {
+  const html = renderToStaticMarkup(React.createElement(
+    AuthContext.Provider,
+    { value: { user: null, loading: false, signIn: async () => user, signOut: async () => {} } },
+    React.createElement(MemoryRouter, null, React.createElement(RegisterCompanyForm)),
+  ));
+  assert.match(html, /aria-label="Mostrar contraseña"/);
+  assert.match(html, /type="password"/);
+  assert.match(html, /visibility_off/);
+  assert.match(html, /border-transparent/);
+  assert.doesNotMatch(html, /Ingresa un correo electrónico válido|Ingresa tu nombre/);
+  assert.equal(challengeSchema.shape.email.safeParse("incorrecto").error.issues[0].message, "Ingresa un correo electrónico válido");
+  assert.equal(challengeSchema.shape.password.safeParse("1234567").error.issues[0].message, "La contraseña debe tener al menos 8 caracteres");
+  assert.equal(challengeSchema.shape.password.safeParse("12345678").success, true);
+  assert.equal(challengeSchema.shape.companyName.safeParse(" ").error.issues[0].message, "El nombre de la empresa es obligatorio");
+  assert.equal(challengeSchema.shape.acceptTerms.safeParse(false).error.issues[0].message, "Debes aceptar los términos para continuar");
 });

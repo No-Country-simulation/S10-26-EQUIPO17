@@ -1,19 +1,20 @@
 import { Controller, useFormContext } from "react-hook-form";
 import { countryOptions, orgTypeOptions, sectorOptions } from "../challengeFormOptions";
 import type { ChallengeFormValues } from "../challengeFormSchema";
-import { FormField } from "./FormField";
+import { RegistrationField } from "./RegistrationField";
 import { OptionCards } from "./OptionCards";
 
 export function OrganizationStep() {
-  const { register, control, formState: { errors } } = useFormContext<ChallengeFormValues>();
+  const { register, control } = useFormContext<ChallengeFormValues>();
 
   return (
     <div className="space-y-2">
-      <FormField label="Empresa / entidad" error={errors.companyName?.message} hint="Marca o denominación comercial.">
-        <input {...register("companyName")} type="text" autoComplete="organization" className="input w-full" placeholder="Ej. NovaTech Solutions" />
-      </FormField>
+      <RegistrationField name="companyName" label="Empresa / entidad" hint="Marca o denominación comercial.">
+        {(accessibility) => <input {...register("companyName")} {...accessibility} aria-label="Empresa / entidad" type="text" autoComplete="organization" required className="input validator w-full" placeholder="Ej. NovaTech Solutions" />}
+      </RegistrationField>
 
-      <FormField label="Tipo de organización" error={errors.organizationType?.message}>
+      <RegistrationField name="organizationType" label="Tipo de organización">
+        {(accessibility) => (
         <Controller
           control={control}
           name="organizationType"
@@ -22,32 +23,34 @@ export function OrganizationStep() {
               options={orgTypeOptions}
               value={field.value}
               onChange={field.onChange}
+              {...accessibility}
               className="sm:grid-cols-3"
             />
           )}
         />
-      </FormField>
+        )}
+      </RegistrationField>
 
       <div className="grid gap-x-4 md:grid-cols-2">
-        <FormField label="País sede" error={errors.country?.message}>
-          <select {...register("country")} className="select w-full">
+        <RegistrationField name="country" label="País sede">
+          {(accessibility) => <select {...register("country")} {...accessibility} aria-label="País sede" className="select w-full">
             {countryOptions.map((country) => (
               <option key={country.value} value={country.value}>
                 {country.label}
               </option>
             ))}
-          </select>
-        </FormField>
+          </select>}
+        </RegistrationField>
 
-        <FormField label="Sector / industria" error={errors.businessSector?.message}>
-          <select {...register("businessSector")} className="select w-full">
+        <RegistrationField name="businessSector" label="Sector / industria">
+          {(accessibility) => <select {...register("businessSector")} {...accessibility} aria-label="Sector / industria" className="select w-full">
             {sectorOptions.map((sector) => (
               <option key={sector.value} value={sector.value}>
                 {sector.label}
               </option>
             ))}
-          </select>
-        </FormField>
+          </select>}
+        </RegistrationField>
       </div>
     </div>
   );

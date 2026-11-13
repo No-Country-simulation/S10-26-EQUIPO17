@@ -34,7 +34,7 @@ export function HeroSection() {
               className="btn btn-lg bg-brand-gradient border-0 text-white shadow-[0_0_25px_rgba(255,0,148,0.4)]">
               <span className="material-symbols-outlined">rocket_launch</span> Validar mi proyecto o idea
             </Link>
-            <a href="#public-dashboard" onClick={() => track("clicked_public_metrics_hero", { location: "hero_section", role })} className="btn btn-lg border-neutral bg-base-300 hover:border-secondary">
+            <a href="https://companies.nocountry.tech/simulation" onClick={() => track("clicked_public_metrics_hero", { location: "hero_section", role })} className="btn btn-lg border-neutral bg-base-300 hover:border-secondary">
               <span className="material-symbols-outlined text-secondary">sensors</span> Ver Public Dashboard en Vivo
             </a>
           </div>
