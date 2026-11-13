@@ -41,6 +41,21 @@ test("los enlaces de navegación llevan a las páginas oficiales indicadas", () 
     assert.doesNotMatch(link[0], /\btarget=/);
   }
   assert.match(markup, /href="#talento"[^>]*>Para profesionales emergentes<\/a>/);
+  assert.match(markup, /aria-label="Menú de navegación"[^>]*aria-expanded="false"[^>]*aria-controls=/);
+  assert.match(markup, /class="hidden items-center gap-4 xl:flex 2xl:gap-8"/);
+  assert.match(markup, /class="flex items-center gap-2 xl:hidden"/);
+  assert.match(markup, /class="hidden items-center gap-2 sm:flex"/);
+});
+
+test("el enlace de talento vuelve a la landing desde otras páginas", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(
+      AuthContext.Provider,
+      { value: { user: null, loading: false, signIn: async () => {}, signOut: async () => {} } },
+      React.createElement(MemoryRouter, { initialEntries: ["/subir-proyecto"] }, React.createElement(Navbar)),
+    ),
+  );
+  assert.match(markup, /href="\/#talento"[^>]*>Para profesionales emergentes<\/a>/);
 });
 
 after(async () => {
